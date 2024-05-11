@@ -15,7 +15,7 @@
 #define PointerEvent 5   // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.5
 #define ButtonEvent 0xff // power button, rest button, etc
 
-// screen /dev/cu.wchusbserialxxx 9600 \n
+// screen /dev/cu.wchusbserialxxx 115200 \n
 // open-kvm\n
 
 // test the builtin LED
@@ -304,16 +304,16 @@ public:
   }
 };
 
-void on_spi(void *)
-{
-  while (1)
-  {
-    delay(1500);
-    // Serial.print("_");
-
-    // TODO start a SPI to listen data from a GPIO device
-  }
-}
+//void on_spi(void *)
+//{
+//  while (1)
+//  {
+//    delay(1500);
+//    // Serial.print("_");
+//
+//    // TODO start a SPI to listen data from a GPIO device
+//  }
+//}
 
 USBHIDKeyboard Keyboard;
 USBHIDMouse Mouse;
@@ -335,16 +335,16 @@ void setup()
 
   Serial.println("[100%] ready");
 
-  // start a new thread
-  xTaskCreatePinnedToCore(
-      on_spi,   // the task
-      "on_spi", // the name of the task
-      10000,    // stack size
-      NULL,     // parameters
-      1,        // priority
-      NULL,     // task handle
-      0         // core
-  );
+//  // start a new thread
+//  xTaskCreatePinnedToCore(
+//      on_spi,   // the task
+//      "on_spi", // the name of the task
+//      10000,    // stack size
+//      NULL,     // parameters
+//      1,        // priority
+//      NULL,     // task handle
+//      0         // core
+//  );
 }
 
 void loop()

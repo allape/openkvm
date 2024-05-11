@@ -7,6 +7,14 @@ like [`IPMI`](https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Inte
 
 Just like `MIT` license says, no warranty or guarantee. And do **NOT** use for any illegal purposes.
 
+### TODO
+- [ ] Long time test on SBC
+- [ ] VNC authentication
+  - DES encryption in Golang can NOT directly apply to [`VNC Authentication`](https://datatracker.ietf.org/doc/html/rfc6143#section-7.1.2)
+- [ ] More effective to calculate the difference between frames
+  - Balance between the power of SBC and the network efficiency
+  - Or achieve more support for noVNC, beyond [rfc6143](https://datatracker.ietf.org/doc/html/rfc6143)
+
 ## Dev Environment
 
 ### Hardware
@@ -22,7 +30,7 @@ Essential hardware are:
         - [OrangePi](https://www.orangepi.org/)
         - [BTT-Pi](https://bigtree-tech.com/blogs/news/new-release-bigtreetech-btt-pi)
         - etc...
-    - Maybe an Android phone (TODO)
+    - Maybe an Android phone?
 - `HDMI Recorder`
     - The common seen `HDMI Recorder` is a `USB 3.0` device.  
       There is only blank data from the `HDMI Recorder` on a `USB 2.0` port.
@@ -132,7 +140,15 @@ _**Price is for reference only, the actual price may vary.**_
    # [Optional] You can run noVNC separately
    python3 -m http.server --directory noVNC/ 8081
    ```
-5. Run or build repo
+5. Flash ESP32-S3
+   - Open folder [km/esp32s3](./km/esp32s3) of this project in [VSCode](https://code.visualstudio.com/)
+   - After installing [PlatformIO](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide) extension
+     - Go to `PlatformIO` Tab
+     - `PROJECT TASKS` -> `Default` -> `General` -> `Upload`
+     - Or open `command palette` and type `PlatformIO: Upload`
+       - `⌘ + shift + p` on macOS to open command palette
+       - `ctrl + shift + p` on Windows or Ubuntu
+6. Run or build repo
    ```shell
    cd openkvm
    cp kvm.toml.tpl kvm.toml
@@ -145,6 +161,8 @@ _**Price is for reference only, the actual price may vary.**_
    
    go run .
    ```
+7. Open browser and go to http://ip:8080/vnc.html, then click `Connect`
+   - Hostname and port may vary depending on your settings
 
 # Credits
 
