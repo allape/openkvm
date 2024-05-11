@@ -1,0 +1,8 @@
+/target
+
+/.vscode
+/.idea
+
+/kvm.toml
+/openkvm.zip
+/noVNC
