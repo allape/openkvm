@@ -5,13 +5,17 @@
 # See https://go.dev/ref/spec#Tag
 
 [websocket]
+# `127.0.0.1:8080` listen for 127.0.0.1 only
+# `:8080` can be accessed by any device
 addr = ":8080"
+# VNC websockets path, this is the default value for noVNC
 path = "/websockify"
-cors = true
+# CORS only apply for websocket connection only, not all HTTP requests
+cors = false
 
 [vnc]
 # path to a static served folder, noVNC is recommended
-path = "../noVNC"
+#path = "../noVNC"
 
 [keyboard]
 # none, serialport

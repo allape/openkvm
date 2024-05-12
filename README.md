@@ -1,11 +1,12 @@
 # OpenKVM
 
-DIY KVM device for remote controlling a computer. `KVM` stands for `Keyboard & Video & Mouse`.
+DIY KVM device for remote-controlling a computer. `KVM` stands for `Keyboard & Video & Mouse`.
 
 A side system on a rackmount server,
-like [`IPMI`](https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface) in `Dell Server`.
+[`IPMI`](https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface) in `Dell Server` for example.
 
-Just like `MIT` license says, no warranty or guarantee. And do **NOT** use for any illegal purposes.
+Just like the [MIT license](./LICENSE) says, no warranty or guarantee.  
+**And do _NOT_ use for any illegal purposes.**
 
 ### TODO
 - [ ] Long time test on SBC
@@ -19,7 +20,7 @@ Just like `MIT` license says, no warranty or guarantee. And do **NOT** use for a
 
 ### Hardware
 
-**_NONE_ of them are sponsored, use them at your own risk!**
+**_NONE_ of them is sponsored, use them at your own risk!**
 
 Essential hardware are:
 
@@ -97,7 +98,7 @@ _**Price is for reference only, the actual price may vary.**_
 
 ## Run
 
-### Debian
+### Debian ARM64
 
 1. Install GO dev kit
    ```shell
@@ -129,6 +130,7 @@ _**Price is for reference only, the actual price may vary.**_
       ```shell
       mkdir opencv4 && cd opencv4
       wget -O opencv.zip https://github.com/opencv/opencv/archive/4.x.zip
+      unzip opencv.zip
       mkdir -p build && cd build
       cmake ../opencv-4.x
       cmake --build .
