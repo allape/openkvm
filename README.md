@@ -34,11 +34,26 @@ Essential hardware are:
         - etc...
     - Maybe an Android phone?
 - `HDMI Recorder`
-    - The common seen `HDMI Recorder` is a `USB 3.0` device.  
-      There is only blank data from the `HDMI Recorder` on a `USB 2.0` port.
+    - ~~The common seen `HDMI Recorder` is a `USB 3.0` device.  
+      There is only blank data from the `HDMI Recorder` on a `USB 2.0` port.~~  
+      It seems that this is the problem of the `HDMI Recorder` itself,  
+      the `HDMI Recorder` I bought can NOT work on Linux (Debian ARM or Ubuntu 24.04) even with a `USB 3.0` port.
       ```shell
-      ffmpeg -y -f v4l2 -loglevel debug -i /dev/video0 -framerate 30 -video_size 1920x1080 -t 5 -input_format mjepg -preset faster -pix_fmt yuv420p vidoe.mkv
+      ffmpeg -y -loglevel debug \
+        -f v4l2 -i /dev/video0 \
+        -framerate 30 -video_size 1920x1080 -input_format mjepg \
+        -t 5 -preset faster -pix_fmt yuv420p \
+        vidoe.mkv
       # Dequeued v4l2 buffer contains corrupted data (0 bytes).
+      
+      usbreset device-name
+      v4l2-ctl --verbose \
+          --device=/dev/video0 \
+          --stream-mmap \
+          --stream-count=1 \
+          --stream-to=frame.jpg \
+          --set-fmt-video="width=640,height=480,pixelformat=MJPG"
+      # cap dqbuf: 0 seq:      0 bytesused: 0 ts: 0.000000 delta: 0.000 ms (error, ts-monotonic, ts-src-soe)
       ```
       Then, on the selection of SBC, beware of the support of `USB 3.0`.
     - Or a `webcam` with an always-on monitor.
