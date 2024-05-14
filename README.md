@@ -15,6 +15,7 @@ Just like the [MIT license](./LICENSE) says, no warranty or guarantee.
 - [ ] More effective to calculate the difference between frames
   - Balance between the power of SBC and the network efficiency
   - Or achieve more support for noVNC, beyond [rfc6143](https://datatracker.ietf.org/doc/html/rfc6143)
+- [ ] Device filter for USB devices
 
 ## Dev Environment
 
