@@ -111,14 +111,14 @@ _**Price is for reference only, the actual price may vary.**_
 2. Pull this repo
    ```shell
    sudo apt-get update
-   sudo apt-get install git
-   git clone https://www.github.com/allape/openkvm.git
+   sudo apt-get install -y git
+   git clone https://github.com/allape/openkvm.git
    ```
 3. Install OpenCV
     - Method 1: Install from APT
        ```shell
        sudo apt-get update
-       sudo apt-get install -y build-essential g++ cmake pkg-config unzip
+       sudo apt-get install -y build-essential g++ cmake pkg-config unzip libopencv-dev
        
        # But in BTT-Pi, it is only up tp v4.5.1
        # Then, I have to change the version of `gocv.io/x/gocv` to corresponding version
