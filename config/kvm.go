@@ -9,7 +9,6 @@ import (
 	"github.com/allape/openkvm/kvm/video"
 	"github.com/allape/openkvm/kvm/video/device"
 	"log"
-	"strconv"
 )
 
 func KeyboardFromConfig(conf Config) (kd keymouse.KeyboardMouseDriver, err error) {
@@ -39,10 +38,6 @@ func KeyboardFromConfig(conf Config) (kd keymouse.KeyboardMouseDriver, err error
 func VideoFromConfig(conf Config) (vd video.Driver, err error) {
 	switch conf.Video.Type {
 	case VideoUSBDevice:
-		src, err := strconv.Atoi(conf.Video.Src)
-		if err != nil {
-			return nil, err
-		}
 		phw, err := conf.Video.Ext.GetInt("phw", 1920)
 		if err != nil {
 			return nil, err
@@ -51,7 +46,7 @@ func VideoFromConfig(conf Config) (vd video.Driver, err error) {
 		if err != nil {
 			return nil, err
 		}
-		vd = device.NewDevice(src, conf.Video.FrameRate, conf.Video.FlipCode, &device.PlaceholderOptions{
+		vd = device.NewDevice(conf.Video.Src, conf.Video.FrameRate, conf.Video.FlipCode, &device.PlaceholderOptions{
 			Width:  phw,
 			Height: phh,
 		})

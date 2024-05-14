@@ -27,6 +27,7 @@ ext = "baud:\"115200\""
 # `usb` only
 type = "usb"
 # video device index when using `usb` as driver
+# either the index of video device or the path to video device
 src = "0"
 frame_rate = 30.0
 # min 0, max 100

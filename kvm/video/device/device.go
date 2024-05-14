@@ -30,7 +30,7 @@ type Device struct {
 
 	LastCaptureTime *time.Time
 	FrameRate       float64
-	Index           int
+	Src             string
 	FlipCode        video.FlipCode
 	WebCam          *gocv.VideoCapture
 	Codec           codec.Codec
@@ -68,7 +68,7 @@ func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
 }
 
 func (d *Device) Open() error {
-	webcam, err := gocv.OpenVideoCapture(d.Index)
+	webcam, err := gocv.OpenVideoCapture(d.Src)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func ImageChanged(img1, img2 image.Image, size image.Point, offsetX, offsetY, wi
 	return false
 }
 
-func NewDevice(index int, frameRate float64, flipCode video.FlipCode, ph *PlaceholderOptions) video.Driver {
+func NewDevice(src string, frameRate float64, flipCode video.FlipCode, ph *PlaceholderOptions) video.Driver {
 	if ph == nil {
 		ph = &PlaceholderOptions{
 			Width:  1920,
@@ -256,7 +256,7 @@ func NewDevice(index int, frameRate float64, flipCode video.FlipCode, ph *Placeh
 	dev := &Device{
 		LastCaptureTime: nil,
 		FrameRate:       frameRate,
-		Index:           index,
+		Src:             src,
 		FlipCode:        flipCode,
 		Placeholder:     *ph,
 
