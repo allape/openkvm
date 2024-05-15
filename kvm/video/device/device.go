@@ -10,6 +10,7 @@ import (
 	"image/color"
 	"log"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
@@ -66,7 +67,7 @@ func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
 	if d.PreludeCommand.Command != "" {
 		cmd := exec.Command(d.PreludeCommand.Command, d.PreludeCommand.Args...)
 		output, err := cmd.CombinedOutput()
-		log.Println(Tag, "prelude command output:", string(output))
+		log.Println(Tag, "prelude command:", strings.TrimSpace(string(output)))
 		if err != nil {
 			return nil, true, errors.New("failed to run prelude command: " + err.Error())
 		}
