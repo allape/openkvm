@@ -24,6 +24,8 @@ src = "/dev/ttyACM0"
 ext = "baud:\"115200\""
 
 [video]
+# a command run before video capture
+#prelude_command = "shell:\"bash\" args:\"-c\" cmd:\"usbreset Hagibis\""
 # `usb` only
 type = "usb"
 # video device index when using `usb` as driver

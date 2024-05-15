@@ -11,7 +11,10 @@ import (
 func TestNew(t *testing.T) {
 	var err error
 
-	device := NewDevice("0", 30, video.Vertical, nil)
+	device := NewDevice("0", &Options{
+		FrameRate: 30,
+		FlipCode:  video.Vertical,
+	})
 	err = device.Open()
 	if err != nil {
 		t.Fatal(err)

@@ -46,9 +46,14 @@ func VideoFromConfig(conf Config) (vd video.Driver, err error) {
 		if err != nil {
 			return nil, err
 		}
-		vd = device.NewDevice(conf.Video.Src, conf.Video.FrameRate, conf.Video.FlipCode, &device.PlaceholderOptions{
-			Width:  phw,
-			Height: phh,
+		vd = device.NewDevice(conf.Video.Src, &device.Options{
+			FrameRate: conf.Video.FrameRate,
+			FlipCode:  conf.Video.FlipCode,
+			Placeholder: device.PlaceholderOptions{
+				Width:  phw,
+				Height: phh,
+			},
+			PreludeCommand: conf.Video.PreludeCommand,
 		})
 	default:
 		return nil, fmt.Errorf("unknown video driver: %s", conf.Video.Type)

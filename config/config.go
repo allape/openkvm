@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/allape/openkvm/config/sub"
 	"github.com/allape/openkvm/kvm/video"
 	"github.com/pelletier/go-toml/v2"
 	"log"
@@ -38,25 +39,26 @@ type Websocket struct {
 }
 
 type Video struct {
-	Type       VideoDriverType
-	Src        string
-	FrameRate  float64
-	Quality    int
-	FlipCode   video.FlipCode
-	SliceCount video.SliceCount
-	Ext        TagString
+	PreludeCommand sub.PreludeCommand
+	Type           VideoDriverType
+	Src            string
+	FrameRate      float64
+	Quality        int
+	FlipCode       video.FlipCode
+	SliceCount     video.SliceCount
+	Ext            sub.TagString
 }
 
 type Keyboard struct {
 	Type KeyboardDriverType
 	Src  string
-	Ext  TagString
+	Ext  sub.TagString
 }
 
 type Mouse struct {
 	Type MouseDriverType
 	Src  string
-	Ext  TagString
+	Ext  sub.TagString
 }
 
 type VNC struct {
@@ -84,12 +86,13 @@ func GetConfig() (Config, error) {
 			Type: KeyboardNone,
 		},
 		Video: Video{
-			Type:       VideoUSBDevice,
-			Src:        "0",
-			FlipCode:   video.Nothing,
-			FrameRate:  30,
-			SliceCount: 4,
-			Ext:        `placeholder:"width:1920,height:1080"`,
+			PreludeCommand: "",
+			Type:           VideoUSBDevice,
+			Src:            "0",
+			FlipCode:       video.Nothing,
+			FrameRate:      30,
+			SliceCount:     4,
+			Ext:            `placeholder:"width:1920,height:1080"`,
 		},
 		Mouse: Mouse{
 			Type: MouseNone,

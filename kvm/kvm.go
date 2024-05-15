@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"slices"
+	"sync"
 )
 
 const (
@@ -50,6 +51,7 @@ type Server struct {
 	Options Options
 
 	serverInitBytes []byte
+	locker          sync.Locker
 }
 
 func (s *Server) CloseClient(client Client, message string) error {
@@ -134,22 +136,31 @@ func (s *Server) HandleClient(client Client) error {
 		// 0000 0000 2018 0001 00ff 00ff 00ff 1008 0000 0000
 		case 2: // SetEncodings
 		case 3: // FramebufferUpdateRequest
-			rects, err := s.Video.GetNextImageRects(s.Options.SliceCount, full)
-			if err != nil {
-				log.Println(Tag, "GetNextImageRects error:", err)
-				//continue
-			}
-			msg, err = s.VideoCodec.FramebufferUpdate(rects)
-			if err != nil {
-				log.Println(Tag, "FramebufferUpdate error:", err)
-				//continue
-			}
+			s.locker.Lock()
+			err := func() error {
+				defer s.locker.Unlock()
+				rects, err := s.Video.GetNextImageRects(s.Options.SliceCount, full)
+				if err != nil {
+					log.Println(Tag, "GetNextImageRects error:", err)
+					//continue
+				}
+				msg, err = s.VideoCodec.FramebufferUpdate(rects)
+				if err != nil {
+					log.Println(Tag, "FramebufferUpdate error:", err)
+					//continue
+				}
 
-			if len(rects) > 0 {
-				full = false
-			}
+				if len(rects) > 0 {
+					full = false
+				}
 
-			_, err = client.Write(msg)
+				_, err = client.Write(msg)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}()
 			if err != nil {
 				return err
 			}
@@ -254,6 +265,8 @@ func New(
 		Video:      v,
 		Mouse:      m,
 		VideoCodec: videoCodec,
+
+		locker: &sync.Mutex{},
 	}
 
 	return s, nil

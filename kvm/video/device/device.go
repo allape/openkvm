@@ -2,19 +2,28 @@ package device
 
 import (
 	"errors"
-	"github.com/allape/openkvm/kvm/codec"
+	"github.com/allape/openkvm/config/sub"
 	"github.com/allape/openkvm/kvm/video"
 	"github.com/allape/openkvm/kvm/video/placeholder"
 	"gocv.io/x/gocv"
 	"image"
 	"image/color"
+	"log"
+	"os/exec"
 	"sync"
 	"time"
 )
 
+const Tag = "[video-device]"
+
 type PlaceholderOptions struct {
 	Width  int
 	Height int
+}
+
+type Commander struct {
+	Command string
+	Args    []string
 }
 
 type Device struct {
@@ -33,8 +42,9 @@ type Device struct {
 	Src             string
 	FlipCode        video.FlipCode
 	WebCam          *gocv.VideoCapture
-	Codec           codec.Codec
 	Placeholder     PlaceholderOptions
+
+	PreludeCommand Commander
 }
 
 func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
@@ -53,6 +63,14 @@ func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
 		return d.mat, false, nil
 	}
 
+	if d.PreludeCommand.Command != "" {
+		cmd := exec.Command(d.PreludeCommand.Command, d.PreludeCommand.Args...)
+		output, err := cmd.CombinedOutput()
+		log.Println(Tag, "prelude command output:", string(output))
+		if err != nil {
+			return nil, true, errors.New("failed to run prelude command: " + err.Error())
+		}
+	}
 	if ok := d.WebCam.Read(d.mat); !ok {
 		return nil, true, errors.New("failed to read frame")
 	}
@@ -246,22 +264,44 @@ func ImageChanged(img1, img2 image.Image, size image.Point, offsetX, offsetY, wi
 	return false
 }
 
-func NewDevice(src string, frameRate float64, flipCode video.FlipCode, ph *PlaceholderOptions) video.Driver {
-	if ph == nil {
-		ph = &PlaceholderOptions{
+type Options struct {
+	PreludeCommand sub.PreludeCommand
+	Placeholder    PlaceholderOptions
+	FlipCode       video.FlipCode
+	FrameRate      float64
+}
+
+func NewDevice(src string, options *Options) video.Driver {
+	if options == nil {
+		options = &Options{}
+	}
+
+	if options.FrameRate == 0 {
+		options.FrameRate = 30
+	}
+	if options.Placeholder.Width == 0 {
+		options.Placeholder = PlaceholderOptions{
 			Width:  1920,
 			Height: 1080,
 		}
 	}
+
+	cmd, args := options.PreludeCommand.Get()
+
 	dev := &Device{
 		LastCaptureTime: nil,
-		FrameRate:       frameRate,
-		Src:             src,
-		FlipCode:        flipCode,
-		Placeholder:     *ph,
+
+		Src:         src,
+		FrameRate:   options.FrameRate,
+		FlipCode:    options.FlipCode,
+		Placeholder: options.Placeholder,
+		PreludeCommand: Commander{
+			Command: cmd,
+			Args:    args,
+		},
 
 		locker:          &sync.Mutex{},
-		interpolateTime: time.Duration(float64(time.Second) / frameRate),
+		interpolateTime: time.Duration(float64(time.Second) / options.FrameRate),
 	}
 
 	return dev
