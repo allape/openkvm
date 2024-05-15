@@ -42,5 +42,5 @@ const (
 	Horizontal FlipCode = 0
 	Vertical   FlipCode = 1
 	Both       FlipCode = -1
-	Nothing    FlipCode = -2
+	NoFlip     FlipCode = -2
 )

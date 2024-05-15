@@ -31,6 +31,8 @@ type = "usb"
 # video device index when using `usb` as driver
 # either the index of video device or the path to video device
 src = "0"
+width = 1920
+height = 1080
 frame_rate = 30.0
 # min 0, max 100
 quality = 75
@@ -38,10 +40,7 @@ quality = 75
 flip_code = -2
 # `4` will slice frame into a 4x4 grid, total 16 pieces
 slice_count = 4
-# phw = placeholder width
-# phh = placeholder height
-# placeholder will be used when no output frame from usb device
-ext = "phw:\"1920\" phh:\"1080\""
+ext = ""
 
 [mouse]
 # none, serialport

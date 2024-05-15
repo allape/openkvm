@@ -2,7 +2,7 @@ package device
 
 import (
 	"errors"
-	"github.com/allape/openkvm/config/sub"
+	"github.com/allape/openkvm/config/tag"
 	"github.com/allape/openkvm/kvm/video"
 	"github.com/allape/openkvm/kvm/video/placeholder"
 	"gocv.io/x/gocv"
@@ -16,11 +16,6 @@ import (
 )
 
 const Tag = "[video-device]"
-
-type PlaceholderOptions struct {
-	Width  int
-	Height int
-}
 
 type Commander struct {
 	Command string
@@ -39,12 +34,13 @@ type Device struct {
 	rects []video.Rect
 
 	LastCaptureTime *time.Time
-	FrameRate       float64
-	Src             string
-	FlipCode        video.FlipCode
 	WebCam          *gocv.VideoCapture
-	Placeholder     PlaceholderOptions
 
+	Src            string
+	Width          int
+	Height         int
+	FrameRate      float64
+	FlipCode       video.FlipCode
 	PreludeCommand Commander
 }
 
@@ -77,7 +73,7 @@ func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
 	}
 
 	// flip mat at horizon
-	if d.FlipCode != video.Nothing {
+	if d.FlipCode != video.NoFlip {
 		gocv.Flip(*d.mat, d.mat, int(d.FlipCode))
 	}
 
@@ -87,13 +83,23 @@ func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
 }
 
 func (d *Device) Open() error {
-	webcam, err := gocv.OpenVideoCapture(d.Src)
+	d.locker.Lock()
+	defer d.locker.Unlock()
+
+	var err error
+
+	d.WebCam, err = gocv.OpenVideoCapture(d.Src)
 	if err != nil {
 		return err
 	}
-	d.WebCam = webcam
+
 	buffer := gocv.NewMat()
 	d.mat = &buffer
+
+	d.WebCam.Set(gocv.VideoCaptureFrameWidth, float64(d.Width))
+	d.WebCam.Set(gocv.VideoCaptureFrameHeight, float64(d.Height))
+	//d.WebCam.Set(gocv.VideoCaptureFPS, d.FrameRate)
+
 	return nil
 }
 
@@ -126,7 +132,7 @@ func (d *Device) Reset() error {
 
 func (d *Device) GetPlaceholderImage(text string) (video.Frame, error) {
 	return placeholder.CreatePlaceholder(
-		d.Placeholder.Width, d.Placeholder.Height,
+		d.Width, d.Height,
 		color.RGBA{A: 255},
 		color.RGBA{R: 255, G: 0, B: 0, A: 255},
 		text,
@@ -266,10 +272,11 @@ func ImageChanged(img1, img2 image.Image, size image.Point, offsetX, offsetY, wi
 }
 
 type Options struct {
-	PreludeCommand sub.PreludeCommand
-	Placeholder    PlaceholderOptions
-	FlipCode       video.FlipCode
+	Width          int
+	Height         int
 	FrameRate      float64
+	FlipCode       video.FlipCode
+	PreludeCommand tag.PreludeCommand
 }
 
 func NewDevice(src string, options *Options) video.Driver {
@@ -277,32 +284,31 @@ func NewDevice(src string, options *Options) video.Driver {
 		options = &Options{}
 	}
 
+	if options.Width == 0 {
+		options.Width = 1920
+	}
+	if options.Height == 0 {
+		options.Height = 1920
+	}
 	if options.FrameRate == 0 {
 		options.FrameRate = 30
-	}
-	if options.Placeholder.Width == 0 {
-		options.Placeholder = PlaceholderOptions{
-			Width:  1920,
-			Height: 1080,
-		}
 	}
 
 	cmd, args := options.PreludeCommand.Get()
 
 	dev := &Device{
-		LastCaptureTime: nil,
+		locker:          &sync.Mutex{},
+		interpolateTime: time.Duration(float64(time.Second) / options.FrameRate),
 
-		Src:         src,
-		FrameRate:   options.FrameRate,
-		FlipCode:    options.FlipCode,
-		Placeholder: options.Placeholder,
+		Src:       src,
+		Width:     options.Width,
+		Height:    options.Height,
+		FrameRate: options.FrameRate,
+		FlipCode:  options.FlipCode,
 		PreludeCommand: Commander{
 			Command: cmd,
 			Args:    args,
 		},
-
-		locker:          &sync.Mutex{},
-		interpolateTime: time.Duration(float64(time.Second) / options.FrameRate),
 	}
 
 	return dev

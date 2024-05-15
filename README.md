@@ -63,7 +63,7 @@ Essential hardware are:
         v4l2-ctl --verbose \
         --device=/dev/video0 \
         --stream-mmap \
-        --stream-count=0 \
+        --stream-count=1 \
         --stream-to=frame.jpg \
         --set-fmt-video="width=640,height=480,pixelformat=MJPG"
         

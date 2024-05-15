@@ -38,21 +38,11 @@ func KeyboardFromConfig(conf Config) (kd keymouse.KeyboardMouseDriver, err error
 func VideoFromConfig(conf Config) (vd video.Driver, err error) {
 	switch conf.Video.Type {
 	case VideoUSBDevice:
-		phw, err := conf.Video.Ext.GetInt("phw", 1920)
-		if err != nil {
-			return nil, err
-		}
-		phh, err := conf.Video.Ext.GetInt("phh", 1080)
-		if err != nil {
-			return nil, err
-		}
 		vd = device.NewDevice(conf.Video.Src, &device.Options{
-			FrameRate: conf.Video.FrameRate,
-			FlipCode:  conf.Video.FlipCode,
-			Placeholder: device.PlaceholderOptions{
-				Width:  phw,
-				Height: phh,
-			},
+			Width:          conf.Video.Width,
+			Height:         conf.Video.Height,
+			FrameRate:      conf.Video.FrameRate,
+			FlipCode:       conf.Video.FlipCode,
 			PreludeCommand: conf.Video.PreludeCommand,
 		})
 	default:
