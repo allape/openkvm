@@ -33,36 +33,36 @@ const (
 )
 
 type Websocket struct {
-	Addr string
-	Path string
-	Cors bool
+	Addr string `toml:"addr"`
+	Path string `toml:"path"`
+	Cors bool   `toml:"cors"`
 }
 
 type Video struct {
-	PreludeCommand sub.PreludeCommand
-	Type           VideoDriverType
-	Src            string
-	FrameRate      float64
-	Quality        int
-	FlipCode       video.FlipCode
-	SliceCount     video.SliceCount
-	Ext            sub.TagString
+	PreludeCommand sub.PreludeCommand `toml:"prelude_command"`
+	Type           VideoDriverType    `toml:"type"`
+	Src            string             `toml:"src"`
+	FrameRate      float64            `toml:"frame_rate"`
+	Quality        int                `toml:"quality"`
+	FlipCode       video.FlipCode     `toml:"flip_code"`
+	SliceCount     video.SliceCount   `toml:"slice_count"`
+	Ext            sub.TagString      `toml:"ext"`
 }
 
 type Keyboard struct {
-	Type KeyboardDriverType
-	Src  string
-	Ext  sub.TagString
+	Type KeyboardDriverType `toml:"type"`
+	Src  string             `toml:"src"`
+	Ext  sub.TagString      `toml:"ext"`
 }
 
 type Mouse struct {
-	Type MouseDriverType
-	Src  string
-	Ext  sub.TagString
+	Type MouseDriverType `toml:"type"`
+	Src  string          `toml:"src"`
+	Ext  sub.TagString   `toml:"ext"`
 }
 
 type VNC struct {
-	Path string
+	Path string `toml:"path"`
 }
 
 type Config struct {
