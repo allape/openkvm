@@ -9,13 +9,20 @@ Just like the [MIT license](./LICENSE) says, no warranty or guarantee.
 **And do _NOT_ use for any illegal purposes.**
 
 ### TODO
-- [ ] Long time test on SBC
+- [ ] Installation script
+  - [] Register as a system service
+  - [] Start on boot
 - [ ] VNC authentication
   - DES encryption in Golang can NOT directly apply to [`VNC Authentication`](https://datatracker.ietf.org/doc/html/rfc6143#section-7.1.2)
 - [ ] More effective to calculate the difference between frames
   - Balance between the power of SBC and the network efficiency
   - Or achieve more support for noVNC, beyond [rfc6143](https://datatracker.ietf.org/doc/html/rfc6143)
-- [ ] Device filter for USB devices
+- [ ] Device filter for USB devices: for multiple device controlling
+- [ ] OTG as keyboard and mouse, see Linux [USB Gadget API](https://www.kernel.org/doc/html/v4.16/driver-api/usb/gadget.html)
+- [ ] Using a single command to get the frame for `Video`, like 
+  ```shell
+  v4l2-ctl --device=/dev/video0 --stream-mmap --stream-count=1 --stream-to=- --set-fmt-video="width=640,height=480,pixelformat=MJPG"
+  ```
 
 ## Dev Environment
 
@@ -93,7 +100,6 @@ Essential hardware are:
 
 - `SBC`: [BTT-Pi](https://bigtree-tech.com/blogs/news/new-release-bigtreetech-btt-pi)
     - [GitHub](https://github.com/bigtreetech/BTT-Pi)
-    - BTT-Pi **DOES NOT** support `USB 3.0`.
     - `¥158 RMB` ≈ `$22.5 USD`
 - `Webcam & Monitor`: An old `webcam` and a monitor.
     - I don't think these stuffs should be detailed 😂.
@@ -107,21 +113,19 @@ Essential hardware are:
     - `¥241 RMB` ≈ `$34 USD`
 - `HDMI Recorder`: [hagibis UHC07](https://cn.hagibis.com/products-p00222p1.html)
     - `¥69 RMB` ≈ `$10 USD`
-- `Keyboard & Mouse`: [ESP32-S3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html)
-    - [WeAct ESP32 S3 (A) DevKitC 1](https://github.com/WeActStudio).
-    - `¥52 RMB` ≈ `$7.5 USD`
 
 #### Others
 
 - Test Device:
     - [RaspberryPi 2B](https://www.raspberrypi.com/products/raspberry-pi-2-model-b/)
     - A Windows computer
+    - Ubuntu 24.04 x86_64
 - Some SD cards.
 - Some `USB Type-C2C/C2A` cables.
 - A `HDMI` cable.
 - Some power supplies.
 
-At minimal, it costs about `¥400 RMB` ≈ `60 USD`.  
+It costs about `¥300 RMB` ≈ `40 USD`.  
 _**Price is for reference only, the actual price may vary.**_
 
 ### Software
