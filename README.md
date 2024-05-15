@@ -67,6 +67,8 @@ Essential hardware are:
         --stream-to=frame.jpg \
         --set-fmt-video="width=640,height=480,pixelformat=MJPG"
         
+        # BUT! But, in size of 1920x1080, frame will be corrupted
+        
         # Without resetting the USB device, there will be some error message in `dmesg` command
         # Non-zero status (-71) in video completion handler.
         

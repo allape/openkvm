@@ -60,14 +60,6 @@ func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
 		return d.mat, false, nil
 	}
 
-	if d.PreludeCommand.Command != "" {
-		cmd := exec.Command(d.PreludeCommand.Command, d.PreludeCommand.Args...)
-		output, err := cmd.CombinedOutput()
-		log.Println(Tag, "prelude command:", strings.TrimSpace(string(output)))
-		if err != nil {
-			return nil, true, errors.New("failed to run prelude command: " + err.Error())
-		}
-	}
 	if ok := d.WebCam.Read(d.mat); !ok {
 		return nil, true, errors.New("failed to read frame")
 	}
@@ -87,6 +79,15 @@ func (d *Device) Open() error {
 	defer d.locker.Unlock()
 
 	var err error
+
+	if d.PreludeCommand.Command != "" {
+		cmd := exec.Command(d.PreludeCommand.Command, d.PreludeCommand.Args...)
+		output, err := cmd.CombinedOutput()
+		log.Println(Tag, "prelude command:", strings.TrimSpace(string(output)))
+		if err != nil {
+			return err
+		}
+	}
 
 	d.WebCam, err = gocv.OpenVideoCapture(d.Src)
 	if err != nil {
