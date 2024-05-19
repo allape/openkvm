@@ -29,22 +29,20 @@
 // "bNNN", NNN is the key code, 000~255
 #define KeyboardTestEvent 'b'
 // test mouse
-// "c10001-002" for left button with offset (00001, -0002)
-// "c200000000" for right
-// "c400000000" for middle
-// "c00100-100" for moving cursor with (100, -100)
-// "cNXXXXYYYY", N is button, XXXX is x offset(-128~127), YYYY is y offset(-128~127)
+// "c1000001-00002" for click left button at (0001, 0002)
+// "c2000000000000" for right
+// "c4000000000000" for middle
+// "c0010000-10000" for moving cursor to (100, 100)
+// "cNXXXXXXYYYYYY", N is button, XXXXXX is x axis(int16), YYYYYY is y axis(int16)
 #define MouseTestEvent 'c'
 
 class SerialReader
 {
 private:
   USBHIDKeyboard _keyboard;
-  USBHIDMouse _mouse;
+  USBHIDAbsoluteMouse _mouse;
 
   char _pressed_mouse_buttons = 0;
-  int _last_mouse_x = 0;
-  int _last_mouse_y = 0;
 
   char _buf[BufferLength] = {};
   int _index = 0;
@@ -147,13 +145,11 @@ private:
       this->_mouse.press(this->_pressed_mouse_buttons);
     }
 
-    this->_mouse.move(x - this->_last_mouse_x, y - this->_last_mouse_y, wheel, 0);
-    this->_last_mouse_x = x;
-    this->_last_mouse_y = y;
+    this->_mouse.move(x, y, wheel, 0);
   }
 
 public:
-  SerialReader(USBHIDKeyboard keyboard, USBHIDMouse mouse)
+  SerialReader(USBHIDKeyboard keyboard, USBHIDAbsoluteMouse mouse)
   {
     this->_keyboard = keyboard;
     this->_mouse = mouse;
@@ -226,7 +222,7 @@ public:
         Serial.println("[debug] wait for keyboard test event");
         break;
       case MouseTestEvent:
-        this->_target_len = 10;
+        this->_target_len = 14;
         Serial.println("[debug] wait for mouse test event");
         break;
       default:
@@ -278,10 +274,10 @@ public:
       char button = this->_buf[1] - '1' + 1;
       this->_mouse.click(button);
 
-      char x_str[6] = {};
-      memcpy(x_str, this->_buf + 2, 4);
-      char y_str[6] = {};
-      memcpy(y_str, this->_buf + 6, 4);
+      char x_str[8] = {};
+      memcpy(x_str, this->_buf + 2, 6);
+      char y_str[8] = {};
+      memcpy(y_str, this->_buf + 8, 6);
       int x = atoi(x_str);
       int y = atoi(y_str);
       this->_mouse.move(x, y, 0, 0);
@@ -316,7 +312,7 @@ public:
 //}
 
 USBHIDKeyboard Keyboard;
-USBHIDMouse Mouse;
+USBHIDAbsoluteMouse Mouse;
 
 SerialReader *serialport = new SerialReader(Keyboard, Mouse);
 

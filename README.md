@@ -194,14 +194,24 @@ _**Price is for reference only, the actual price may vary.**_
    python3 -m http.server --directory noVNC/ 8081
    ```
 5. Flash ESP32-S3
-    - Open folder [km/esp32s3](./km/esp32s3) of this project in [VSCode](https://code.visualstudio.com/)
-    - After installing [PlatformIO](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide)
-      extension
-        - Go to `PlatformIO` Tab
-        - `PROJECT TASKS` -> `Default` -> `General` -> `Upload`
-        - Or open `command palette` and type `PlatformIO: Upload`
-            - `⌘ + shift + p` on macOS to open command palette
-            - `ctrl + shift + p` on Windows or Ubuntu
+    - ~~[PIO](https://platformio.org/): Espressif has dropped the support for PIO in ESP-IDF v5.x. See git log to
+      retrieve the code.~~
+        - Open folder [km/esp32s3](./km/esp32s3) of this project in [VSCode](https://code.visualstudio.com/)
+        - After installing [PlatformIO](https://marketplace.visualstudio.com/items?itemName=platformio.platformio-ide)
+          extension
+            - Go to `PlatformIO` Tab
+            - `PROJECT TASKS` -> `Default` -> `General` -> `Upload`
+            - Or open `command palette` and type `PlatformIO: Upload`
+                - `⌘ + shift + p` on macOS to open command palette
+                - `ctrl + shift + p` on Windows or Ubuntu
+    - [Arduino](https://www.arduino.cc/)
+        - Open `Perferences` -> `Additional Board Manager URLs` ->
+          Add `https://espressif.github.io/arduino-esp32/package_esp32_dev_index.json`
+            - Click [HERE](https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html#installing-using-arduino-ide) for more details
+        - Open [km/esp32s3-arduino/main/main.ino](./km/esp32s3-arduino/main/main.ino)
+          with [Arduino IDE](https://github.com/arduino/arduino-ide)
+        - Select board `ESP32S3 Dev Module` and corresponding port
+        - Click `Upload`
 6. Run or build repo
    ```shell
    cd openkvm
