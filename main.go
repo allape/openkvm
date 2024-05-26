@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/allape/openkvm/config"
+	config2 "github.com/allape/openkvm/factory"
 	"github.com/allape/openkvm/kvm"
 	"github.com/gorilla/websocket"
 	"log"
@@ -19,7 +20,7 @@ func main() {
 		log.Fatalln(Tag, "get config:", err)
 	}
 
-	k, err := config.KeyboardFromConfig(conf)
+	k, err := config2.KeyboardFromConfig(conf)
 	if err != nil {
 		log.Fatalln(Tag, "keyboard from config:", err)
 	}
@@ -29,7 +30,7 @@ func main() {
 		}
 	}()
 
-	v, err := config.VideoFromConfig(conf)
+	v, err := config2.VideoFromConfig(conf)
 	if err != nil {
 		log.Fatalln(Tag, "video from config:", err)
 	}
@@ -39,7 +40,7 @@ func main() {
 		}
 	}()
 
-	m, err := config.MouseFromConfigOrUseKeyboard(k, conf)
+	m, err := config2.MouseFromConfigOrUseKeyboard(k, conf)
 	if err != nil {
 		log.Fatalln(Tag, "mouse from config or use keyboard:", err)
 	}
@@ -49,13 +50,13 @@ func main() {
 		}
 	}()
 
-	videoCodec, err := config.VideoCodecFromConfig(conf)
+	videoCodec, err := config2.VideoCodecFromConfig(conf)
 	if err != nil {
 		log.Fatalln(Tag, "video codec from config:", err)
 	}
 
 	server, err := kvm.New(k, v, m, videoCodec, kvm.Options{
-		SliceCount: conf.Video.SliceCount,
+		Config: conf,
 	})
 	if err != nil {
 		log.Fatalln(Tag, "new kvm:", err)

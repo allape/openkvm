@@ -2,7 +2,7 @@ package placeholder
 
 import (
 	_ "embed"
-	"github.com/allape/openkvm/kvm/video"
+	"github.com/allape/openkvm/config"
 	"github.com/fogleman/gg"
 	"github.com/golang/freetype/truetype"
 	"image/color"
@@ -21,7 +21,7 @@ func CreatePlaceholder(
 	backgroundColor, color color.Color,
 	text string,
 	timestamp bool, // put current time in YYYY-MM-dd HH:mm:ss pattern at the right bottom corner
-) (video.Frame, error) {
+) (config.Frame, error) {
 	dc := gg.NewContext(width, height)
 	dc.SetColor(backgroundColor)
 	dc.Fill()

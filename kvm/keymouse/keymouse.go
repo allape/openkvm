@@ -1,6 +1,8 @@
 package keymouse
 
-import "io"
+import (
+	"io"
+)
 
 type KeyEvent []byte
 type PointerEvent []byte

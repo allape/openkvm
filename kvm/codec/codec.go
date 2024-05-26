@@ -1,9 +1,9 @@
 package codec
 
 import (
-	"github.com/allape/openkvm/kvm/video"
+	"github.com/allape/openkvm/config"
 )
 
 type Codec interface {
-	FramebufferUpdate(rects []video.Rect) ([]byte, error)
+	FramebufferUpdate(rects []config.Rect) ([]byte, error)
 }

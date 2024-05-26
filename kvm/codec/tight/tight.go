@@ -2,8 +2,8 @@ package tight
 
 import (
 	"bytes"
+	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/codec"
-	"github.com/allape/openkvm/kvm/video"
 	"image/jpeg"
 )
 
@@ -12,7 +12,7 @@ type JPEGEncoder struct {
 	Quality int
 }
 
-func (e *JPEGEncoder) FramebufferUpdate(rects []video.Rect) ([]byte, error) {
+func (e *JPEGEncoder) FramebufferUpdate(rects []config.Rect) ([]byte, error) {
 	count := len(rects)
 	var payload = []byte{
 		0,                             // FramebufferUpdate

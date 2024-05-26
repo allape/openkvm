@@ -3,6 +3,7 @@ package kvm
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/codec"
 	"github.com/allape/openkvm/kvm/keymouse"
 	"github.com/allape/openkvm/kvm/video"
@@ -38,8 +39,8 @@ type ServerInit struct {
 }
 
 type Options struct {
-	Password   string // not used
-	SliceCount video.SliceCount
+	Config   config.Config
+	Password string // not used
 }
 
 type Server struct {
@@ -139,7 +140,7 @@ func (s *Server) HandleClient(client Client) error {
 			s.locker.Lock()
 			err := func() error {
 				defer s.locker.Unlock()
-				rects, err := s.Video.GetNextImageRects(s.Options.SliceCount, full)
+				rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, full)
 				if err != nil {
 					log.Println(Tag, "GetNextImageRects error:", err)
 					//continue
@@ -178,6 +179,25 @@ func (s *Server) HandleClient(client Client) error {
 				log.Println(Tag, "Mouse driver is not available")
 				continue
 			}
+
+			// apply the scale
+			if len(msg) == 6 {
+				//               +--------------+--------------+--------------+
+				//              | No. of bytes | Type [Value] | Description  |
+				//              +--------------+--------------+--------------+
+				//              | 1            | U8 [5]       | message-type |
+				//              | 1            | U8           | button-mask  |
+				//              | 2            | U16          | x-position   |
+				//              | 2            | U16          | y-position   |
+				//              +--------------+--------------+--------------+
+				oldX := binary.BigEndian.Uint16(msg[2:4])
+				oldY := binary.BigEndian.Uint16(msg[4:6])
+				x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorMoveScale)
+				y := uint16(float64(oldY) * s.Options.Config.Mouse.CursorMoveScale)
+				log.Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", Tag, oldX, oldY, x, y)
+				copy(msg[2:6], []byte{byte(x >> 8), byte(x), byte(y >> 8), byte(y)})
+			}
+
 			err := s.Mouse.SendPointerEvent(msg)
 			if err != nil {
 				log.Println(Tag, "SendPointerEvent error:", err)

@@ -2,7 +2,7 @@ package device
 
 import (
 	"errors"
-	"github.com/allape/openkvm/config/tag"
+	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
 	"github.com/allape/openkvm/kvm/video/placeholder"
 	"gocv.io/x/gocv"
@@ -31,7 +31,7 @@ type Device struct {
 
 	// tmp
 	img   image.Image
-	rects []video.Rect
+	rects []config.Rect
 
 	LastCaptureTime *time.Time
 	WebCam          *gocv.VideoCapture
@@ -40,7 +40,7 @@ type Device struct {
 	Width          int
 	Height         int
 	FrameRate      float64
-	FlipCode       video.FlipCode
+	FlipCode       config.FlipCode
 	PreludeCommand Commander
 }
 
@@ -65,7 +65,7 @@ func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
 	}
 
 	// flip mat at horizon
-	if d.FlipCode != video.NoFlip {
+	if d.FlipCode != config.NoFlip {
 		gocv.Flip(*d.mat, d.mat, int(d.FlipCode))
 	}
 
@@ -99,7 +99,7 @@ func (d *Device) Open() error {
 
 	d.WebCam.Set(gocv.VideoCaptureFrameWidth, float64(d.Width))
 	d.WebCam.Set(gocv.VideoCaptureFrameHeight, float64(d.Height))
-	//d.WebCam.Set(gocv.VideoCaptureFPS, d.FrameRate)
+	d.WebCam.Set(gocv.VideoCaptureFPS, d.FrameRate)
 
 	return nil
 }
@@ -131,7 +131,7 @@ func (d *Device) Reset() error {
 	return nil
 }
 
-func (d *Device) GetPlaceholderImage(text string) (video.Frame, error) {
+func (d *Device) GetPlaceholderImage(text string) (config.Frame, error) {
 	return placeholder.CreatePlaceholder(
 		d.Width, d.Height,
 		color.RGBA{A: 255},
@@ -141,7 +141,7 @@ func (d *Device) GetPlaceholderImage(text string) (video.Frame, error) {
 	)
 }
 
-func (d *Device) GetFrame() (video.Frame, video.Changed, error) {
+func (d *Device) GetFrame() (config.Frame, video.Changed, error) {
 	mat, changed, err := d.GetMat()
 	if err != nil {
 		ph, phErr := d.GetPlaceholderImage(err.Error())
@@ -163,7 +163,7 @@ type SubImager interface {
 	SubImage(r image.Rectangle) image.Image
 }
 
-func (d *Device) GetNextImageRects(sliceCount video.SliceCount, full bool) ([]video.Rect, error) {
+func (d *Device) GetNextImageRects(sliceCount config.SliceCount, full bool) ([]config.Rect, error) {
 	sc := int(sliceCount)
 
 	var err error
@@ -228,13 +228,13 @@ func (d *Device) GetNextImageRects(sliceCount video.SliceCount, full bool) ([]vi
 		wait.Wait()
 	}
 
-	rects := make([]video.Rect, 0)
+	rects := make([]config.Rect, 0)
 	for i := 0; i < colCount; i++ {
 		for j := 0; j < rowCount; j++ {
 			if !rectChangedMarks[i][j] {
 				continue
 			}
-			rects = append(rects, video.Rect{
+			rects = append(rects, config.Rect{
 				X:     uint64(i * rectSize.X),
 				Y:     uint64(j * rectSize.Y),
 				Frame: img.SubImage(image.Rect(i*rectSize.X, j*rectSize.Y, (i+1)*rectSize.X, (j+1)*rectSize.Y)),
@@ -276,8 +276,8 @@ type Options struct {
 	Width          int
 	Height         int
 	FrameRate      float64
-	FlipCode       video.FlipCode
-	PreludeCommand tag.PreludeCommand
+	FlipCode       config.FlipCode
+	PreludeCommand config.PreludeCommand
 }
 
 func NewDevice(src string, options *Options) video.Driver {

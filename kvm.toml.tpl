@@ -8,13 +8,13 @@
 # `127.0.0.1:8080` listen for 127.0.0.1 only
 # `:8080` can be accessed by any device
 addr = ":8080"
-# VNC websockets path, this is the default value for noVNC
+# VNC websockets path, this is the default value for noVNC.
 path = "/websockify"
-# CORS only apply for websocket connection only, not all HTTP requests
+# CORS only apply for websocket connection only, not all HTTP requests.
 cors = false
 
 [vnc]
-# path to a static served folder, noVNC is recommended
+# Path to a static served folder, noVNC is recommended.
 #path = "../noVNC"
 
 [keyboard]
@@ -24,12 +24,12 @@ src = "/dev/ttyACM0"
 ext = "baud:\"115200\""
 
 [video]
-# a command run before video capture
+# A command run before video capture.
 #prelude_command = "shell:\"bash\" args:\"-c\" cmd:\"usbreset Hagibis\""
 # `usb` only
 type = "usb"
-# video device index when using `usb` as driver
-# either the index of video device or the path to video device
+# Video device index when using `usb` as driver.
+# Either the index of video device or the path to video device.
 src = "0"
 width = 1920
 height = 1080
@@ -47,3 +47,7 @@ ext = ""
 type = "serialport"
 src = "/dev/ttyACM0"
 ext = "baud:\"115200\""
+# A factor to adjust the cursor move distance when the video is scaled.
+# Example:
+#  If the cursor move distance is 10 pixels, and the CursorMoveFactor is 0.5, the cursor will move 5 pixel.
+cursor_move_scale = 1.0

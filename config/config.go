@@ -1,8 +1,6 @@
 package config
 
 import (
-	"github.com/allape/openkvm/config/tag"
-	"github.com/allape/openkvm/kvm/video"
 	"github.com/pelletier/go-toml/v2"
 	"log"
 	"os"
@@ -39,28 +37,34 @@ type Websocket struct {
 }
 
 type Video struct {
-	PreludeCommand tag.PreludeCommand `toml:"prelude_command"`
-	Width          int                `toml:"width"`
-	Height         int                `toml:"height"`
-	Type           VideoDriverType    `toml:"type"`
-	Src            string             `toml:"src"`
-	FrameRate      float64            `toml:"frame_rate"`
-	Quality        int                `toml:"quality"`
-	FlipCode       video.FlipCode     `toml:"flip_code"`
-	SliceCount     video.SliceCount   `toml:"slice_count"`
-	Ext            tag.TagString      `toml:"ext"`
+	PreludeCommand PreludeCommand  `toml:"prelude_command"`
+	Width          int             `toml:"width"`
+	Height         int             `toml:"height"`
+	Type           VideoDriverType `toml:"type"`
+	Src            string          `toml:"src"`
+	FrameRate      float64         `toml:"frame_rate"`
+	Quality        int             `toml:"quality"`
+	FlipCode       FlipCode        `toml:"flip_code"`
+	SliceCount     SliceCount      `toml:"slice_count"`
+	Ext            TagString       `toml:"ext"`
 }
 
 type Keyboard struct {
 	Type KeyboardDriverType `toml:"type"`
 	Src  string             `toml:"src"`
-	Ext  tag.TagString      `toml:"ext"`
+	Ext  TagString          `toml:"ext"`
 }
 
 type Mouse struct {
 	Type MouseDriverType `toml:"type"`
 	Src  string          `toml:"src"`
-	Ext  tag.TagString   `toml:"ext"`
+	Ext  TagString       `toml:"ext"`
+
+	// CursorMoveScale
+	// A factor to adjust the cursor move distance when the video is scaled.
+	// Example:
+	//  If the cursor move distance is 10 pixels, and the CursorMoveScale is 0.5, the cursor will move 5 pixel.
+	CursorMoveScale float64 `toml:"cursor_move_scale"`
 }
 
 type VNC struct {
@@ -93,7 +97,7 @@ func GetConfig() (Config, error) {
 			Height:         1080,
 			Type:           VideoUSBDevice,
 			Src:            "0",
-			FlipCode:       video.NoFlip,
+			FlipCode:       NoFlip,
 			FrameRate:      30,
 			SliceCount:     4,
 			Ext:            "",

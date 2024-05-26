@@ -2,7 +2,7 @@ package device
 
 import (
 	"fmt"
-	"github.com/allape/openkvm/kvm/video"
+	"github.com/allape/openkvm/config"
 	"image/jpeg"
 	"os"
 	"testing"
@@ -13,7 +13,7 @@ func TestNew(t *testing.T) {
 
 	device := NewDevice("0", &Options{
 		FrameRate: 30,
-		FlipCode:  video.Vertical,
+		FlipCode:  config.Vertical,
 	})
 	err = device.Open()
 	if err != nil {
