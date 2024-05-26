@@ -60,11 +60,13 @@ type Mouse struct {
 	Src  string          `toml:"src"`
 	Ext  TagString       `toml:"ext"`
 
-	// CursorMoveScale
+	// CursorXScale
 	// A factor to adjust the cursor move distance when the video is scaled.
 	// Example:
-	//  If the cursor move distance is 10 pixels, and the CursorMoveScale is 0.5, the cursor will move 5 pixel.
-	CursorMoveScale float64 `toml:"cursor_move_scale"`
+	//  If the VNC cursor move distance is 10 pixels, and the CursorXScale is 0.5, the actual cursor will move 5 pixel.
+	CursorXScale float64 `toml:"cursor_x_scale"`
+	// CursorYScale: see CursorXScale
+	CursorYScale float64 `toml:"cursor_y_scale"`
 }
 
 type VNC struct {
