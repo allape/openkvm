@@ -1,12 +1,12 @@
 package config
 
 import (
+	"github.com/allape/openkvm/logger"
 	"github.com/pelletier/go-toml/v2"
-	"log"
 	"os"
 )
 
-const Tag = "[config]"
+var log = logger.New("[config]")
 
 const DefaultConfigPath = "kvm.toml"
 
@@ -87,7 +87,7 @@ func GetConfig() (Config, error) {
 		configFile = os.Args[1]
 	}
 
-	log.Println(Tag, "reading config file:", configFile)
+	log.Println("reading config file:", configFile)
 
 	config := Config{
 		Keyboard: Keyboard{
@@ -131,7 +131,7 @@ func GetConfig() (Config, error) {
 		return config, err
 	}
 
-	log.Println(Tag, "use config:", config)
+	log.Println("use config:", config)
 
 	return config, nil
 }

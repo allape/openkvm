@@ -7,16 +7,17 @@ import (
 	"github.com/allape/openkvm/kvm/codec"
 	"github.com/allape/openkvm/kvm/keymouse"
 	"github.com/allape/openkvm/kvm/video"
+	"github.com/allape/openkvm/logger"
 	"io"
-	"log"
 	"slices"
 	"sync"
 )
 
 const (
-	Tag     = "[kvm]"
 	Version = "RFB 003.008\n"
 )
+
+var log = logger.NewVerboseLogger("[kvm]")
 
 type PixelFormat struct {
 	BitsPerPixel uint8
@@ -130,7 +131,7 @@ func (s *Server) HandleClient(client Client) error {
 			continue
 		}
 
-		//log.Println(Tag, "msg:", hex.EncodeToString(msg))
+		//log.Println("msg:", hex.EncodeToString(msg))
 
 		switch msg[0] {
 		case 0: // SetPixelFormat
@@ -142,12 +143,12 @@ func (s *Server) HandleClient(client Client) error {
 				defer s.locker.Unlock()
 				rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, full)
 				if err != nil {
-					log.Println(Tag, "GetNextImageRects error:", err)
+					log.Println("GetNextImageRects error:", err)
 					//continue
 				}
 				msg, err = s.VideoCodec.FramebufferUpdate(rects)
 				if err != nil {
-					log.Println(Tag, "FramebufferUpdate error:", err)
+					log.Println("FramebufferUpdate error:", err)
 					//continue
 				}
 
@@ -167,16 +168,16 @@ func (s *Server) HandleClient(client Client) error {
 			}
 		case 4: // KeyEvent
 			if s.Keyboard == nil {
-				log.Println(Tag, "Keyboard driver is not available")
+				log.Println("Keyboard driver is not available")
 				continue
 			}
 			err := s.Keyboard.SendKeyEvent(msg)
 			if err != nil {
-				log.Println(Tag, "SendKeyEvent error:", err)
+				log.Println("SendKeyEvent error:", err)
 			}
 		case 5: // PointerEvent
 			if s.Mouse == nil {
-				log.Println(Tag, "Mouse driver is not available")
+				log.Println("Mouse driver is not available")
 				continue
 			}
 
@@ -194,17 +195,17 @@ func (s *Server) HandleClient(client Client) error {
 				oldY := binary.BigEndian.Uint16(msg[4:6])
 				x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorXScale)
 				y := uint16(float64(oldY) * s.Options.Config.Mouse.CursorYScale)
-				//log.Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", Tag, oldX, oldY, x, y)
+				//log.Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", oldX, oldY, x, y)
 				copy(msg[2:6], []byte{byte(x >> 8), byte(x), byte(y >> 8), byte(y)})
 			}
 
 			err := s.Mouse.SendPointerEvent(msg)
 			if err != nil {
-				log.Println(Tag, "SendPointerEvent error:", err)
+				log.Println("SendPointerEvent error:", err)
 			}
 		case 6: // ClientCutText
 		default:
-			log.Println(Tag, "Unsupported message type:", hex.EncodeToString(msg))
+			log.Println("Unsupported message type:", hex.EncodeToString(msg))
 		}
 	}
 }

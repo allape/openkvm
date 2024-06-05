@@ -5,17 +5,17 @@ import (
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
 	"github.com/allape/openkvm/kvm/video/placeholder"
+	"github.com/allape/openkvm/logger"
 	"gocv.io/x/gocv"
 	"image"
 	"image/color"
-	"log"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
 )
 
-const Tag = "[video-device]"
+var log = logger.NewVerboseLogger("[video-device]")
 
 type Commander struct {
 	Command string
@@ -83,7 +83,7 @@ func (d *Device) Open() error {
 	if d.PreludeCommand.Command != "" {
 		cmd := exec.Command(d.PreludeCommand.Command, d.PreludeCommand.Args...)
 		output, err := cmd.CombinedOutput()
-		log.Println(Tag, "prelude command:", strings.TrimSpace(string(output)))
+		log.Println("prelude command:", strings.TrimSpace(string(output)))
 		if err != nil {
 			return err
 		}

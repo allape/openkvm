@@ -1,4 +1,4 @@
-package config
+package factory
 
 import (
 	"github.com/allape/openkvm/config"

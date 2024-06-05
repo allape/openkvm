@@ -2,27 +2,27 @@ package main
 
 import (
 	"github.com/allape/openkvm/config"
-	config2 "github.com/allape/openkvm/factory"
+	"github.com/allape/openkvm/factory"
 	"github.com/allape/openkvm/kvm"
+	"github.com/allape/openkvm/logger"
 	"github.com/gorilla/websocket"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-const Tag = "[main]"
+var log = logger.New("[main]")
 
 func main() {
 	conf, err := config.GetConfig()
 	if err != nil {
-		log.Fatalln(Tag, "get config:", err)
+		log.Fatalln("get config:", err)
 	}
 
-	k, err := config2.KeyboardFromConfig(conf)
+	k, err := factory.KeyboardFromConfig(conf)
 	if err != nil {
-		log.Fatalln(Tag, "keyboard from config:", err)
+		log.Fatalln("keyboard from config:", err)
 	}
 	defer func() {
 		if k != nil {
@@ -30,9 +30,9 @@ func main() {
 		}
 	}()
 
-	v, err := config2.VideoFromConfig(conf)
+	v, err := factory.VideoFromConfig(conf)
 	if err != nil {
-		log.Fatalln(Tag, "video from config:", err)
+		log.Fatalln("video from config:", err)
 	}
 	defer func() {
 		if v != nil {
@@ -40,9 +40,9 @@ func main() {
 		}
 	}()
 
-	m, err := config2.MouseFromConfigOrUseKeyboard(k, conf)
+	m, err := factory.MouseFromConfigOrUseKeyboard(k, conf)
 	if err != nil {
-		log.Fatalln(Tag, "mouse from config or use keyboard:", err)
+		log.Fatalln("mouse from config or use keyboard:", err)
 	}
 	defer func() {
 		if m != nil && m != k {
@@ -50,16 +50,16 @@ func main() {
 		}
 	}()
 
-	videoCodec, err := config2.VideoCodecFromConfig(conf)
+	videoCodec, err := factory.VideoCodecFromConfig(conf)
 	if err != nil {
-		log.Fatalln(Tag, "video codec from config:", err)
+		log.Fatalln("video codec from config:", err)
 	}
 
 	server, err := kvm.New(k, v, m, videoCodec, kvm.Options{
 		Config: conf,
 	})
 	if err != nil {
-		log.Fatalln(Tag, "new kvm:", err)
+		log.Fatalln("new kvm:", err)
 	}
 
 	upgrader := websocket.Upgrader{}
@@ -73,7 +73,7 @@ func main() {
 	http.HandleFunc(conf.Websocket.Path, func(writer http.ResponseWriter, request *http.Request) {
 		conn, err := upgrader.Upgrade(writer, request, nil)
 		if err != nil {
-			log.Println(Tag, "upgrade:", err)
+			log.Println("upgrade:", err)
 			return
 		}
 		defer func() {
@@ -82,7 +82,7 @@ func main() {
 
 		err = server.HandleClient(Websockets2KVMClient(conn))
 		if err != nil {
-			log.Println(Tag, "handle client:", err)
+			log.Println("handle client:", err)
 		}
 	})
 
@@ -103,12 +103,12 @@ func main() {
 	}
 
 	go func() {
-		log.Fatalln(Tag, http.ListenAndServe(conf.Websocket.Addr, nil))
+		log.Fatalln(http.ListenAndServe(conf.Websocket.Addr, nil))
 	}()
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	log.Println(Tag, "started")
+	log.Println("started")
 	sig := <-sigs
-	log.Println(Tag, "exiting with", sig)
+	log.Println("exiting with", sig)
 }
