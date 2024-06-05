@@ -1,4 +1,4 @@
-package device
+package usb
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-var log = logger.NewVerboseLogger("[video-device]")
+var log = logger.NewVerboseLogger("[video-usb]")
 
 type Commander struct {
 	Command string

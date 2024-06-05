@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
-	"github.com/allape/openkvm/kvm/video/device"
+	"github.com/allape/openkvm/kvm/video/usb"
 )
 
 func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 	switch conf.Video.Type {
 	case config.VideoUSBDevice:
-		vd = device.NewDevice(conf.Video.Src, &device.Options{
+		vd = usb.NewDevice(conf.Video.Src, &usb.Options{
 			Width:          conf.Video.Width,
 			Height:         conf.Video.Height,
 			FrameRate:      conf.Video.FrameRate,
