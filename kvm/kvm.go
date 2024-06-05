@@ -194,7 +194,7 @@ func (s *Server) HandleClient(client Client) error {
 				oldY := binary.BigEndian.Uint16(msg[4:6])
 				x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorXScale)
 				y := uint16(float64(oldY) * s.Options.Config.Mouse.CursorYScale)
-				log.Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", Tag, oldX, oldY, x, y)
+				//log.Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", Tag, oldX, oldY, x, y)
 				copy(msg[2:6], []byte{byte(x >> 8), byte(x), byte(y >> 8), byte(y)})
 			}
 

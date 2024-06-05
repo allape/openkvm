@@ -31,11 +31,11 @@ type = "usb"
 # Video device index when using `usb` as driver.
 # Either the index of video device or the path to video device.
 src = "0"
-width = 1920
-height = 1080
+width = 1270
+height = 720
 frame_rate = 30.0
 # min 0, max 100
-quality = 75
+quality = 50
 # horizontal(0), vertical(1), both(-1), off(-2)
 flip_code = -2
 # `4` will slice frame into a 4x4 grid, total 16 pieces
@@ -48,6 +48,12 @@ type = "serialport"
 src = "/dev/ttyACM0"
 ext = "baud:\"115200\""
 # A factor to adjust the cursor move distance when the video is scaled.
-# Example:
-#  If the cursor move distance is 10 pixels, and the CursorMoveFactor is 0.5, the cursor will move 5 pixel.
-cursor_move_scale = 1.0
+# Suggested scale for (1920, 1080):
+#   (1920, 1080):
+#     cursor_x_scale = 17.00
+#     cursor_x_scale = 28.78
+#   (1270, 720):
+#     cursor_x_scale = 25.6632
+#     cursor_y_scale = 45.5754925372
+cursor_x_scale = 25.6632
+cursor_y_scale = 45.5754925372
