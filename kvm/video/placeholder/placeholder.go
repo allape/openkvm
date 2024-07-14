@@ -24,6 +24,7 @@ func CreatePlaceholder(
 ) (config.Frame, error) {
 	dc := gg.NewContext(width, height)
 	dc.SetColor(backgroundColor)
+	dc.DrawRectangle(0, 0, float64(width), float64(height))
 	dc.Fill()
 
 	if Font == nil {
