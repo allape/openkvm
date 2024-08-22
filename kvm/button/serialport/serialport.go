@@ -17,7 +17,7 @@ type Button struct {
 	resetButtonPin byte
 	extraButtonPin byte
 
-	km keymouse.Driver
+	KeyboardMouse keymouse.Driver
 }
 
 func (b *Button) GetButton(t button.Type) byte {
@@ -73,7 +73,7 @@ func (b *Button) Open() error {
 		if btn == 0 {
 			continue
 		}
-		_, err = b.km.Write([]byte{
+		_, err = b.KeyboardMouse.Write([]byte{
 			0xff,
 			0x01,
 			btn,
@@ -88,11 +88,11 @@ func (b *Button) Open() error {
 }
 
 func (b *Button) Close() error {
-	return nil
+	return b.KeyboardMouse.Close()
 }
 
 func (b *Button) Press(t button.Type) error {
-	_, err := b.km.Write([]byte{
+	_, err := b.KeyboardMouse.Write([]byte{
 		0xff,
 		0x02,
 		b.GetButton(t),
@@ -102,7 +102,7 @@ func (b *Button) Press(t button.Type) error {
 }
 
 func (b *Button) Release(t button.Type) error {
-	_, err := b.km.Write([]byte{
+	_, err := b.KeyboardMouse.Write([]byte{
 		0xff,
 		0x02,
 		b.GetButton(t),

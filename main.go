@@ -49,15 +49,20 @@ func main() {
 		log.Fatalln("mouse from config or use keyboard:", err)
 	}
 	defer func() {
-		if m != nil && m != k {
+		if m != nil {
 			_ = m.Close()
 		}
 	}()
 
-	b, err := factory.ButtonFromConfig(conf)
+	b, err := factory.ButtonFromConfig(conf, k, m)
 	if err != nil {
 		log.Fatalln("button from config:", err)
 	}
+	defer func() {
+		if b != nil {
+			_ = b.Close()
+		}
+	}()
 
 	videoCodec, err := factory.VideoCodecFromConfig(conf)
 	if err != nil {
