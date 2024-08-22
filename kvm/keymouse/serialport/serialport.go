@@ -15,7 +15,7 @@ var log = logger.NewVerboseLogger("[serialport]")
 const MagicWord = "open-kvm"
 
 type KeyboardMouseDriver struct {
-	keymouse.KeyboardMouseDriver
+	keymouse.Driver
 
 	locker sync.Locker
 	Port   serial.Port
@@ -110,7 +110,7 @@ func (d *KeyboardMouseDriver) SendPointerEvent(e keymouse.PointerEvent) error {
 	return err
 }
 
-func New(name string, baud int) keymouse.KeyboardMouseDriver {
+func New(name string, baud int) keymouse.Driver {
 	return &KeyboardMouseDriver{
 		locker: &sync.Mutex{},
 		Name:   name,

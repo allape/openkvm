@@ -30,6 +30,15 @@ const (
 	MouseSerialPort MouseDriverType = "serialport"
 )
 
+type ButtonDriverType string
+
+const (
+	ButtonNone       ButtonDriverType = "none"
+	ButtonSerialPort ButtonDriverType = "serialport"
+	ButtonShell      ButtonDriverType = "shell"
+	ButtonGPIO       ButtonDriverType = "gpio" // TODO not supported yet
+)
+
 type Websocket struct {
 	Addr string `toml:"addr"`
 	Path string `toml:"path"`
@@ -69,6 +78,15 @@ type Mouse struct {
 	CursorYScale float64 `toml:"cursor_y_scale"`
 }
 
+type Button struct {
+	Type        ButtonDriverType `toml:"type"`
+	Src         string           `toml:"src"`
+	Ext         TagString        `toml:"ext"`
+	PowerButton string           `toml:"pwr_btn"`
+	ResetButton string           `toml:"rst_btn"`
+	ExtraButton string           `toml:"ext_btn"`
+}
+
 type VNC struct {
 	Path string `toml:"path"`
 }
@@ -78,6 +96,7 @@ type Config struct {
 	Video     Video     `toml:"video"`
 	Keyboard  Keyboard  `toml:"keyboard"`
 	Mouse     Mouse     `toml:"mouse"`
+	Button    Button    `toml:"button"`
 	VNC       VNC       `toml:"vnc"`
 }
 

@@ -47,6 +47,7 @@ ext = ""
 type = "serialport"
 src = "/dev/ttyACM0"
 ext = "baud:\"115200\""
+
 # A factor to adjust the cursor move distance when the video is scaled.
 # Suggested scale for (1920, 1080):
 #   (1920, 1080):
@@ -57,3 +58,18 @@ ext = "baud:\"115200\""
 #     cursor_y_scale = 45.5754925372
 cursor_x_scale = 25.6632
 cursor_y_scale = 45.5754925372
+
+[button]
+# none, serialport, shell, gpio
+#type = "serialport"
+#src = "/dev/ttyACM0"
+#ext = "baud:\"115200\""
+type = "shell"
+# Demo for OrangePI https://github.com/orangepi-xunlong/wiringOP
+ext = "open:\"gpio mode $PIN out\" press:\"gpio write $PIN 1\" release:\"gpio write $PIN 0\""
+# GPIO Pin for power button
+pwr_btn = "0"
+# GPIO Pin for reset button
+rst_btn = "1"
+# GPIO Pin for extra button
+ext_btn = "2"

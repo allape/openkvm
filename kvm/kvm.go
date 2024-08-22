@@ -45,9 +45,9 @@ type Options struct {
 }
 
 type Server struct {
-	Keyboard   keymouse.KeyboardMouseDriver
+	Keyboard   keymouse.Driver
 	Video      video.Driver
-	Mouse      keymouse.KeyboardMouseDriver
+	Mouse      keymouse.Driver
 	VideoCodec codec.Codec
 
 	Options Options
@@ -273,9 +273,9 @@ func (s *Server) GetServerInitBytes() ([]byte, error) {
 }
 
 func New(
-	k keymouse.KeyboardMouseDriver,
+	k keymouse.Driver,
 	v video.Driver,
-	m keymouse.KeyboardMouseDriver,
+	m keymouse.Driver,
 	videoCodec codec.Codec,
 	options Options,
 ) (*Server, error) {

@@ -7,7 +7,7 @@ import (
 type KeyEvent []byte
 type PointerEvent []byte
 
-type KeyboardMouseDriver interface {
+type Driver interface {
 	io.Writer
 	io.Closer
 	Open() error

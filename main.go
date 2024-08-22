@@ -4,12 +4,16 @@ import (
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/factory"
 	"github.com/allape/openkvm/kvm"
+	"github.com/allape/openkvm/kvm/button"
 	"github.com/allape/openkvm/logger"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
+	"strconv"
 	"syscall"
+	"time"
 )
 
 var log = logger.New("[main]")
@@ -49,6 +53,11 @@ func main() {
 			_ = m.Close()
 		}
 	}()
+
+	b, err := factory.ButtonFromConfig(conf)
+	if err != nil {
+		log.Fatalln("button from config:", err)
+	}
 
 	videoCodec, err := factory.VideoCodecFromConfig(conf)
 	if err != nil {
@@ -93,6 +102,54 @@ func main() {
 		} else {
 			_ = k.SendPointerEvent([]byte{'a', '0'})
 		}
+		writer.Header().Add("Content-Type", "text/plain")
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write([]byte("ok"))
+	})
+
+	http.HandleFunc("/button", func(writer http.ResponseWriter, request *http.Request) {
+		if b == nil {
+			writer.WriteHeader(http.StatusNotImplemented)
+			_, _ = writer.Write([]byte("not implemented"))
+			return
+		}
+
+		validTypes := []button.Type{button.PowerButton, button.ResetButton, button.ExtraButton}
+
+		query := request.URL.Query()
+
+		t := query.Get("type")
+		if !slices.Contains(validTypes, button.Type(t)) {
+			writer.WriteHeader(http.StatusBadRequest)
+			_, _ = writer.Write([]byte("button type not supported"))
+			return
+		}
+
+		msStr := query.Get("ms")
+		ms, err := strconv.Atoi(msStr)
+		if err != nil {
+			writer.WriteHeader(http.StatusBadRequest)
+			_, _ = writer.Write([]byte("invalid duration"))
+			return
+		}
+		dur := time.Duration(ms) * time.Millisecond
+
+		err = b.Press(button.Type(t))
+		if err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			_, _ = writer.Write([]byte("press button: " + err.Error()))
+			return
+		}
+
+		time.Sleep(dur)
+
+		err = b.Release(button.Type(t))
+		if err != nil {
+			writer.WriteHeader(http.StatusInternalServerError)
+			_, _ = writer.Write([]byte("release button: " + err.Error()))
+			return
+		}
+
 		writer.Header().Add("Content-Type", "text/plain")
 		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write([]byte("ok"))

@@ -13,6 +13,19 @@
 
 #define KeyEvent 4        // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.4
 #define PointerEvent 5    // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.5
+
+// CMD  TYPE PIN  VALUE
+// 0xff 0x01 0x0b 0x01
+//
+// CMD: fixed value 0xff
+// PIN: pin number
+// TYPE:
+//   0x01 for initialing
+//     VALUE: 0x00 for input
+//     VALUE: 0x01 for output
+//   0x02 for set pin
+//     VALUE: 0x00 for LOW
+//     VALUE: 0x01 for HIGH
 #define ButtonEvent 0xff  // power button, rest button, etc
 
 // screen /dev/cu.wchusbserialxxx 115200 \n
@@ -209,7 +222,7 @@ public:
           break;
         case ButtonEvent:
           this->_target_len = 4;
-          Serial.println("[debug] wait for led event");
+          Serial.println("[debug] wait for button event");
           break;
         case LEDTestEvent:
           this->_target_len = 2;
@@ -239,6 +252,11 @@ public:
         this->handle_pointer_event(this->_buf);
         break;
       case ButtonEvent:
+        if (this->_buf[1] == 0x1) {
+          pinMode(this->_buf[2], this->_buf[3] == 0x1 ? OUTPUT : INPUT);
+        } else if (this->_buf[1] == 0x2) {
+          digitalWrite(this->_buf[2], this->_buf[3] == 0x1 ? HIGH : LOW);
+        }
         // TODO
         // 0: 0xff: button event
         // 1: 0x00: padding

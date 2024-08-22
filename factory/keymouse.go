@@ -6,7 +6,7 @@ import (
 	"github.com/allape/openkvm/kvm/keymouse/serialport"
 )
 
-func KeyboardFromConfig(conf config.Config) (kd keymouse.KeyboardMouseDriver, err error) {
+func KeyboardFromConfig(conf config.Config) (kd keymouse.Driver, err error) {
 	switch conf.Keyboard.Type {
 	case config.KeyboardNone:
 		log.Println("keyboard driver is none, no keyboard output")
@@ -30,7 +30,7 @@ func KeyboardFromConfig(conf config.Config) (kd keymouse.KeyboardMouseDriver, er
 	return kd, nil
 }
 
-func MouseFromConfigOrUseKeyboard(kd keymouse.KeyboardMouseDriver, conf config.Config) (md keymouse.KeyboardMouseDriver, err error) {
+func MouseFromConfigOrUseKeyboard(kd keymouse.Driver, conf config.Config) (md keymouse.Driver, err error) {
 	if string(conf.Mouse.Type) != string(conf.Keyboard.Type) ||
 		conf.Mouse.Src != conf.Keyboard.Src ||
 		conf.Mouse.Ext != conf.Keyboard.Ext {
