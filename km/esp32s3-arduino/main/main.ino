@@ -11,8 +11,8 @@
 #define MagicWord "open-kvm"
 #define MagicWordLength 8
 
-#define KeyEvent 4        // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.4
-#define PointerEvent 5    // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.5
+#define KeyEvent 4      // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.4
+#define PointerEvent 5  // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.5
 
 // CMD  TYPE PIN  VALUE
 // 0xff 0x01 0x0b 0x01
@@ -48,6 +48,12 @@
 // "c0010000-10000" for moving cursor to (100, 100)
 // "cNXXXXXXYYYYYY", N is button, XXXXXX is x axis(int16), YYYYYY is y axis(int16)
 #define MouseTestEvent 'c'
+
+// test button
+// "d1121" for set pin 12 to output
+// "d2121" for set pin 12 to HIGH
+// "d2120" for set pin 12 to LOW
+#define ButtonTestEvent 'd'
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button#value
 //     0: Main button pressed, usually the left button or the un-initialized state
@@ -236,6 +242,10 @@ public:
           this->_target_len = 14;
           Serial.println("[debug] wait for mouse test event");
           break;
+        case ButtonTestEvent:
+          this->_target_len = 5;
+          Serial.println("[debug] wait for button test event");
+          break;
         default:
           this->_target_len = 0;
           this->_index = 0;
@@ -252,24 +262,35 @@ public:
         this->handle_pointer_event(this->_buf);
         break;
       case ButtonEvent:
-        if (this->_buf[1] == 0x1) {
-          pinMode(this->_buf[2], this->_buf[3] == 0x1 ? OUTPUT : INPUT);
-        } else if (this->_buf[1] == 0x2) {
-          digitalWrite(this->_buf[2], this->_buf[3] == 0x1 ? HIGH : LOW);
+        {
+          if (this->_buf[1] == 0x1) {
+            bool is_output = this->_buf[3] == 0x1;
+            Serial.print("[debug] button event: set pin ");
+            Serial.print(int(this->_buf[2]));
+            Serial.print(" to ");
+            Serial.println(is_output ? "output" : "input");
+            pinMode(this->_buf[2], is_output ? OUTPUT : INPUT);
+          } else if (this->_buf[1] == 0x2) {
+            bool is_high = this->_buf[3] == 0x1;
+            Serial.print("[debug] button event: set pin ");
+            Serial.print(int(this->_buf[2]));
+            Serial.print(" to ");
+            Serial.println(is_high ? "high" : "low");
+            digitalWrite(this->_buf[2], is_high ? HIGH : LOW);
+          } else {
+            Serial.print("[debug] button event: unknown sub command: ");
+            Serial.println(int(this->_buf[1]));
+          }
+          break;
         }
-        // TODO
-        // 0: 0xff: button event
-        // 1: 0x00: padding
-        // 2: 0x??: power button, this byte represents the seconds to be hold down, min 1, max 255
-        // 3: 0x??: reset button, this byte represents the seconds to be hold down, min 1, max 255
       case LEDTestEvent:
         {
           bool on = this->_buf[1] == '1';
           Serial.print("[debug] led test: ");
           Serial.println(on ? "on" : "off");
           digitalWrite(LED_BUILTIN, on ? HIGH : LOW);
+          break;
         }
-        break;
       case KeyboardTestEvent:
         {
           // if there use `3` as length,
@@ -304,6 +325,31 @@ public:
           Serial.print(",");
           Serial.print(y);
           Serial.println(")");
+          break;
+        }
+      case ButtonTestEvent:
+        {
+          char pin_str[4] = {};
+          memcpy(pin_str, this->_buf + 2, 2);
+          int pin = atoi(pin_str);
+          if (this->_buf[1] == '1') {
+            bool is_output = this->_buf[4] == '1';
+            Serial.print("[debug] button test event: set pin ");
+            Serial.print(pin);
+            Serial.print(" to ");
+            Serial.println(is_output ? "output" : "input");
+            pinMode(pin, is_output ? OUTPUT : INPUT);
+          } else if (this->_buf[1] == '2') {
+            bool is_high = this->_buf[4] == '1';
+            Serial.print("[debug] button test event: set pin ");
+            Serial.print(pin);
+            Serial.print(" to ");
+            Serial.println(is_high ? "high" : "low");
+            digitalWrite(pin, is_high ? HIGH : LOW);
+          } else {
+            Serial.print("[debug] button event: unknown sub command: ");
+            Serial.println(this->_buf[1]);
+          }
           break;
         }
       default:
