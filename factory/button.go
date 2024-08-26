@@ -17,15 +17,17 @@ func ButtonFromConfig(conf config.Config, keyboard keymouse.Driver, mouse keymou
 		log.Println("button driver is none, no button output")
 		return nil, err
 	case config.ButtonSerialPort:
-		log.Println("button driver is serial port:", conf.Button.Src)
 		var km keymouse.Driver
 
 		switch conf.Button.Src {
 		case conf.Keyboard.Src:
+			log.Println("button driver is the same as keyboard driver")
 			km = keyboard
 		case conf.Mouse.Src:
+			log.Println("button driver is the same as mouse driver")
 			km = mouse
 		default:
+			log.Println("button driver is serial port:", conf.Button.Src)
 			baud, err := conf.Button.Ext.GetInt("baud", 9600)
 			if err != nil {
 				return nil, err

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OpenKVM Button Controller</title>
+  <style>
+      .container {
+          margin: 0 auto;
+          max-width: 1200px;
+      }
+
+      .row {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+      }
+
+      button {
+          min-width: 100px;
+      }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="row">
+    <button data-type="power" data-duration="500" onclick="handleClick(this)">Power Button</button>
+    <button data-type="reset" data-duration="500" onclick="handleClick(this)">Reset Button</button>
+    <button data-type="extra" data-duration="500" onclick="handleClick(this)">Extra Button</button>
+  </div>
+  <div class="row">
+    <!--suppress HtmlFormInputWithoutLabel -->
+    <select id="ButtonType">
+      <option value="power">Power Button</option>
+      <option value="reset">Reset Button</option>
+      <option value="extra">Extra Button</option>
+    </select> for
+    <!--suppress HtmlFormInputWithoutLabel -->
+    <input id="Duration" type="number" step="500" placeholder="Duration in millisecond" value="10000"> ms,
+    <button onclick="handleCustomDurationClick(this)">Click</button>
+  </div>
+</div>
+<script>
+  /**
+   * @typedef Millisecond
+   * @extends number
+   */
+
+  /**
+   * @typedef ButtonType
+   * @type {'power' | 'reset' | 'extra'}
+   */
+
+  /**
+   * @param btnType {ButtonType}
+   * @param duration {Millisecond}
+   */
+  async function click(btnType, duration) {
+    const qs = new URLSearchParams({ type: btnType, ms: duration });
+    const res = await fetch(`/api/button?${qs.toString()}`);
+    if (res.ok) {
+      console.log('Button clicked');
+    } else {
+      console.error(`Failed to click button: ${await res.text()}`);
+    }
+  }
+
+  /**
+   * @param ele {HTMLButtonElement}
+   */
+  function handleClick(ele) {
+    const type = ele.dataset.type;
+    const duration = ele.dataset.duration;
+    const text = ele.innerHTML;
+    ele.innerHTML = 'Clicking...';
+    ele.disabled = true;
+    click(type, parseInt(duration)).finally(() => {
+      ele.innerHTML = text;
+      ele.disabled = false;
+    });
+  }
+
+  /**
+   * @param ele {HTMLButtonElement}
+   */
+  function handleCustomDurationClick(ele) {
+    const type = document.getElementById('ButtonType').value;
+    if (!type) {
+      alert('Please select button type');
+      return;
+    }
+
+    const duration = document.getElementById('Duration').value;
+    if (!duration) {
+      alert('Please input duration');
+      return;
+    }
+    const text = ele.innerHTML;
+    ele.innerHTML = 'Clicking...';
+    ele.disabled = true;
+    click(type, parseInt(duration)).finally(() => {
+      ele.innerHTML = text;
+      ele.disabled = false;
+    });
+  }
+</script>
+</body>
+</html>

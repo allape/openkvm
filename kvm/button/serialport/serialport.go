@@ -77,7 +77,7 @@ func (b *Button) Open() error {
 			0xff,
 			0x01,
 			btn,
-			0x00,
+			0x01,
 		})
 		if err != nil {
 			return fmt.Errorf("open %s button error: %w", name, err)

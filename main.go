@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"slices"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -100,7 +101,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/led", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/api/led", func(writer http.ResponseWriter, request *http.Request) {
 		state := request.URL.Query().Get("state")
 		if state == "on" {
 			_ = k.SendPointerEvent([]byte{'a', '1'})
@@ -112,52 +113,62 @@ func main() {
 		_, _ = writer.Write([]byte("ok"))
 	})
 
-	http.HandleFunc("/button", func(writer http.ResponseWriter, request *http.Request) {
-		if b == nil {
-			writer.WriteHeader(http.StatusNotImplemented)
-			_, _ = writer.Write([]byte("not implemented"))
-			return
+	if conf.Button.PowerButton != "" {
+		http.HandleFunc("/api/button", func(writer http.ResponseWriter, request *http.Request) {
+			if b == nil {
+				writer.WriteHeader(http.StatusNotImplemented)
+				_, _ = writer.Write([]byte("not implemented"))
+				return
+			}
+
+			validTypes := []button.Type{button.PowerButton, button.ResetButton, button.ExtraButton}
+
+			query := request.URL.Query()
+
+			t := query.Get("type")
+			if !slices.Contains(validTypes, button.Type(t)) {
+				writer.WriteHeader(http.StatusBadRequest)
+				_, _ = writer.Write([]byte("button type not supported"))
+				return
+			}
+
+			msStr := query.Get("ms")
+			ms, err := strconv.Atoi(msStr)
+			if err != nil {
+				writer.WriteHeader(http.StatusBadRequest)
+				_, _ = writer.Write([]byte("invalid duration"))
+				return
+			}
+			dur := time.Duration(ms) * time.Millisecond
+
+			err = b.Press(button.Type(t))
+			if err != nil {
+				writer.WriteHeader(http.StatusInternalServerError)
+				_, _ = writer.Write([]byte("press button: " + err.Error()))
+				return
+			}
+
+			time.Sleep(dur)
+
+			err = b.Release(button.Type(t))
+			if err != nil {
+				writer.WriteHeader(http.StatusInternalServerError)
+				_, _ = writer.Write([]byte("release button: " + err.Error()))
+				return
+			}
+
+			writer.Header().Add("Content-Type", "text/plain")
+			writer.WriteHeader(http.StatusOK)
+			_, _ = writer.Write([]byte("ok"))
+		})
+	}
+
+	http.HandleFunc("/ui/*", func(writer http.ResponseWriter, request *http.Request) {
+		uri := request.URL.Path
+		if strings.HasPrefix(uri, "/") {
+			uri = "." + uri
 		}
-
-		validTypes := []button.Type{button.PowerButton, button.ResetButton, button.ExtraButton}
-
-		query := request.URL.Query()
-
-		t := query.Get("type")
-		if !slices.Contains(validTypes, button.Type(t)) {
-			writer.WriteHeader(http.StatusBadRequest)
-			_, _ = writer.Write([]byte("button type not supported"))
-			return
-		}
-
-		msStr := query.Get("ms")
-		ms, err := strconv.Atoi(msStr)
-		if err != nil {
-			writer.WriteHeader(http.StatusBadRequest)
-			_, _ = writer.Write([]byte("invalid duration"))
-			return
-		}
-		dur := time.Duration(ms) * time.Millisecond
-
-		err = b.Press(button.Type(t))
-		if err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			_, _ = writer.Write([]byte("press button: " + err.Error()))
-			return
-		}
-
-		time.Sleep(dur)
-
-		err = b.Release(button.Type(t))
-		if err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			_, _ = writer.Write([]byte("release button: " + err.Error()))
-			return
-		}
-
-		writer.Header().Add("Content-Type", "text/plain")
-		writer.WriteHeader(http.StatusOK)
-		_, _ = writer.Write([]byte("ok"))
+		http.ServeFile(writer, request, uri)
 	})
 
 	if conf.VNC.Path != "" {

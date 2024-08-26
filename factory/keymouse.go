@@ -12,7 +12,7 @@ func KeyboardFromConfig(conf config.Config) (kd keymouse.Driver, err error) {
 		log.Println("keyboard driver is none, no keyboard output")
 	case config.KeyboardSerialPort:
 		log.Println("keyboard driver is serial port:", conf.Keyboard.Src)
-		baud, err := conf.Mouse.Ext.GetInt("baud", 9600)
+		baud, err := conf.Keyboard.Ext.GetInt("baud", 9600)
 		if err != nil {
 			return nil, err
 		}
