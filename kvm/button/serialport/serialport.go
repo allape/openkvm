@@ -92,20 +92,28 @@ func (b *Button) Close() error {
 }
 
 func (b *Button) Press(t button.Type) error {
+	btn := b.GetButton(t)
+	if btn == 0 {
+		return errors.New("button not found")
+	}
 	_, err := b.KeyboardMouse.Write([]byte{
 		0xff,
 		0x02,
-		b.GetButton(t),
+		btn,
 		0x01,
 	})
 	return err
 }
 
 func (b *Button) Release(t button.Type) error {
+	btn := b.GetButton(t)
+	if btn == 0 {
+		return errors.New("button not found")
+	}
 	_, err := b.KeyboardMouse.Write([]byte{
 		0xff,
 		0x02,
-		b.GetButton(t),
+		btn,
 		0x00,
 	})
 	return err

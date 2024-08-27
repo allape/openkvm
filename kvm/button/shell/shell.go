@@ -17,11 +17,14 @@ type Button struct {
 	releaseCommand string
 }
 
-func (b *Button) Exec(command, button string) error {
+func (b *Button) Exec(command, btn string) error {
+	if btn == "" {
+		return errors.New("button not found")
+	}
 	segments := strings.Split(command, " ")
 	for i, segment := range segments {
 		if segment == "$PIN" {
-			segments[i] = button
+			segments[i] = btn
 		}
 	}
 	cmd := exec.Command(segments[0], segments[1:]...)
