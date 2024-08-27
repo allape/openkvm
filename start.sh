@@ -2,4 +2,4 @@
 
 #go build -o openkvm .
 
-nohup openkvm > openkvm.log 2>&1 &
+nohup ./openkvm > openkvm.log 2>&1 &
