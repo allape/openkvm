@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 
-#sudo /usr/local/go/bin/go run .
-sudo nohup /usr/local/go/bin/go run . > /dev/null 2>&1 &
+#go build -o openkvm .
+
+nohup openkvm > openkvm.log 2>&1 &

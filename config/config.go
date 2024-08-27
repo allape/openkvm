@@ -133,6 +133,9 @@ func GetConfig() (Config, error) {
 		VNC: VNC{
 			Path: "",
 		},
+		Button: Button{
+			Type: ButtonNone,
+		},
 	}
 
 	_, err := os.Stat(configFile)

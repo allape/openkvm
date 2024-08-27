@@ -4,5 +4,7 @@
 /.idea
 
 /kvm.toml
+/openkvm
+/openkvm.log
 /openkvm.zip
 /noVNC
