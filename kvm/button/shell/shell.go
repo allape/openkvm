@@ -76,8 +76,11 @@ func (b *Button) Open() error {
 	}
 
 	for name, btn := range buttons {
-		if btn == "" && name != "extra" {
-			return errors.New(name + " button not found")
+		if btn == "" {
+			if name != "extra" {
+				return errors.New(name + " button not found")
+			}
+			continue
 		}
 		err = b.Exec(openCommand, btn)
 		if err != nil {
