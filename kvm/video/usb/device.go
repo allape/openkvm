@@ -2,6 +2,7 @@ package usb
 
 import (
 	"errors"
+	"fmt"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
 	"github.com/allape/openkvm/kvm/video/placeholder"
@@ -97,9 +98,10 @@ func (d *Device) Open() error {
 	buffer := gocv.NewMat()
 	d.mat = &buffer
 
-	d.WebCam.Set(gocv.VideoCaptureFrameWidth, float64(d.Width))
-	d.WebCam.Set(gocv.VideoCaptureFrameHeight, float64(d.Height))
-	d.WebCam.Set(gocv.VideoCaptureFPS, d.FrameRate)
+	// We should read these from OpenCV instead of setting them
+	//d.WebCam.Set(gocv.VideoCaptureFrameWidth, float64(d.Width))
+	//d.WebCam.Set(gocv.VideoCaptureFrameHeight, float64(d.Height))
+	//d.WebCam.Set(gocv.VideoCaptureFPS, d.FrameRate)
 
 	return nil
 }
@@ -151,9 +153,16 @@ func (d *Device) GetFrame() (config.Frame, video.Changed, error) {
 		}
 		return nil, changed, err
 	}
+
 	if d.img != nil && !changed {
 		return d.img, changed, nil
 	}
+
+	sizes := mat.Size()
+	if sizes[0] != d.Width || sizes[1] != d.Height {
+		gocv.Resize(*mat, mat, image.Point{X: d.Width, Y: d.Height}, 0, 0, gocv.InterpolationLinear)
+	}
+
 	d.img, err = mat.ToImage()
 	return d.img, changed, err
 }
@@ -188,15 +197,17 @@ func (d *Device) GetNextImageRects(sliceCount config.SliceCount, full bool) ([]c
 	imageSize := img.Bounds().Size()
 
 	if imageSize.X%sc != 0 {
-		return nil, errors.New("image width should be divisible by slice count")
+		return nil, fmt.Errorf("image width should be divisible by slice count: %d %% %d != 0", imageSize.X, sc)
+	} else if imageSize.Y%sc != 0 {
+		return nil, fmt.Errorf("image height should be divisible by slice count: %d %% %d != 0", imageSize.Y, sc)
 	}
 
 	rectSize := image.Point{X: imageSize.X / sc, Y: imageSize.Y / sc}
 
 	if imageSize.X%rectSize.X != 0 {
-		return nil, errors.New("image width should be divisible by rect width")
+		return nil, fmt.Errorf("image width should be divisible by rect width: %d %% %d != 0", imageSize.X, rectSize.X)
 	} else if imageSize.Y%rectSize.Y != 0 {
-		return nil, errors.New("image height should be divisible by rect height")
+		return nil, fmt.Errorf("image height should be divisible by rect height: %d %% %d != 0", imageSize.Y, rectSize.Y)
 	}
 
 	colCount := imageSize.X / rectSize.X
