@@ -102,24 +102,20 @@ Essential hardware are:
     - Arduino?
     - Some other device that supports USB HID output.
         - HID over BLE is not recommended, because it may not work in BIOS.
+- Relay and/or delayed relay
 
-#### Set One
-
-- `SBC`: [BTT-Pi](https://bigtree-tech.com/blogs/news/new-release-bigtreetech-btt-pi)
-    - [GitHub](https://github.com/bigtreetech/BTT-Pi)
-    - `¥158 RMB` ≈ `$22.5 USD`
-- `Webcam & Monitor`: An old `webcam` and a monitor.
-    - I don't think these stuffs should be detailed 😂.
-- `Keyboard & Mouse`: [ESP32-S3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html)
-    - I bought a third-party one of [WeAct ESP32 S3 (A) DevKitC 1](https://github.com/WeActStudio).
-    - `¥52 RMB` ≈ `$7.5 USD`
-
-#### Set Two
+#### My Gears
 
 - `SBC`: [OrangePi 3 LTS](http://www.orangepi.cn/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-3-LTS.html)
     - `¥241 RMB` ≈ `$34 USD`
 - `HDMI Recorder`: [hagibis UHC07](https://cn.hagibis.com/products-p00222p1.html)
     - `¥69 RMB` ≈ `$10 USD`
+    - ⚠️ This device **ONLY** supports 1920x1080 and 3840x2160.
+- `Keyboard & Mouse`: [ESP32-S3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html)
+    - I bought a third-party one of [WeAct ESP32 S3 (A) DevKitC 1](https://github.com/WeActStudio).
+    - `¥52 RMB` ≈ `$7.5 USD`
+- 5V relay * 2, 5V delayed relay * 1
+    - `¥15 RMB` ≈ `$2 USD`
 
 #### Others
 
@@ -133,6 +129,7 @@ Essential hardware are:
 - Some power supplies.
 
 It costs about `¥300 RMB` ≈ `40 USD`.  
+
 _**Price is for reference only, the actual price may vary.**_
 
 ### Software
@@ -140,10 +137,11 @@ _**Price is for reference only, the actual price may vary.**_
 - [GO](https://go.dev/)
 - [OpenCV](https://opencv.org/)
 - [PlatformIO](https://platformio.org/)
+- [noVNC](https://github.com/novnc/noVNC)
 
 ## Diagram
 
-[飞书文档](https://qi58or3rjjg.feishu.cn/wiki/KTZewFOx9iRyzQkfdzTcu8linxc?from=from_copylink)
+[飞书文档, FeiShu Doc](https://qi58or3rjjg.feishu.cn/wiki/KTZewFOx9iRyzQkfdzTcu8linxc?from=from_copylink)
 
 ![diagram.png](./docs/diagram.png)
 
