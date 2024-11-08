@@ -128,7 +128,7 @@ Essential hardware are:
 - A `HDMI` cable.
 - Some power supplies.
 
-It costs about `¥300 RMB` ≈ `40 USD`.  
+It costs about `¥300 RMB` ≈ `40 USD`.
 
 _**Price is for reference only, the actual price may vary.**_
 
@@ -153,7 +153,7 @@ _**Price is for reference only, the actual price may vary.**_
    ```shell
    sudo apt-get update
    sudo apt-get install -y wget curl ffmpeg v4l-utils
-   GO_ZIP="go1.22.3.linux-arm64.tar.gz"
+   GO_ZIP="go1.23.3.linux-arm64.tar.gz"
    wget "https://go.dev/dl/$GO_ZIP"
    sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "$GO_ZIP"
    ```
@@ -169,9 +169,9 @@ _**Price is for reference only, the actual price may vary.**_
        sudo apt-get update
        sudo apt-get install -y build-essential g++ cmake pkg-config unzip libopencv-dev
        
-       # But in BTT-Pi, it is only up tp v4.5.1
-       # Then, I have to change the version of `gocv.io/x/gocv` to corresponding version
-       sed -i 's/gocv.io\/x\/gocv v0.36.1/gocv.io\/x\/gocv opencv-4.5.1/g' openkvm/go.mod
+       # But in Debian 11, it is only up tp v4.5.1
+       # Then, We have to change the version of `gocv.io/x/gocv` to corresponding version
+       sed -i 's/gocv.io\/x\/gocv v0.39.0/gocv.io\/x\/gocv opencv-4.5.1/g' openkvm/go.mod
        ```
     - Method 2: Build OpenCV from source  
       This may cost over 10 hours to build on BTT-Pi, I crashed at 96% :(  
@@ -213,19 +213,24 @@ _**Price is for reference only, the actual price may vary.**_
 6. Run or build repo
    ```shell
    cd openkvm
+   
+   go mod tidy
+   go mod download
+   
    cp kvm.toml.tpl kvm.toml
    
    # Find out serial port
    dmesg | grep tty
    
    # Edit this file to apply your settings
-   vim kvm.toml 
+   vim kvm.toml
    
    # Should run with super user privilege
    sudo go run .
    ```
 7. Open browser and go to http://ip:8080/vnc.html, then click `Connect`
     - Hostname and port may vary depending on your settings
+8. Open http://ip:8080/ui/button.html to control the relay
 
 # Credits
 
