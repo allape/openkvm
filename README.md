@@ -217,7 +217,7 @@ _**Price is for reference only, the actual price may vary.**_
    go mod tidy
    go mod download
    
-   cp kvm.toml.tpl kvm.toml
+   cp kvm.new.toml kvm.toml
    
    # Find out serial port
    dmesg | grep tty

@@ -3,6 +3,7 @@ package usb
 import (
 	"fmt"
 	"github.com/allape/openkvm/config"
+	"github.com/allape/openkvm/kvm/video"
 	"image/jpeg"
 	"os"
 	"testing"
@@ -12,8 +13,10 @@ func TestNew(t *testing.T) {
 	var err error
 
 	device := NewDevice("0", &Options{
-		FrameRate: 30,
-		FlipCode:  config.Vertical,
+		Options: video.Options{
+			FrameRate: 30,
+			FlipCode:  config.Vertical,
+		},
 	})
 	err = device.Open()
 	if err != nil {

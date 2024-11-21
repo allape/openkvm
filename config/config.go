@@ -14,6 +14,7 @@ type VideoDriverType string
 
 const (
 	VideoUSBDevice VideoDriverType = "usb"
+	VideoCltDevice VideoDriverType = "clt"
 )
 
 type KeyboardDriverType string
@@ -46,7 +47,7 @@ type Websocket struct {
 }
 
 type Video struct {
-	PreludeCommand PreludeCommand  `toml:"prelude_command"`
+	PreludeCommand ShellCommand    `toml:"prelude_command"`
 	Width          int             `toml:"width"`
 	Height         int             `toml:"height"`
 	Type           VideoDriverType `toml:"type"`

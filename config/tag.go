@@ -1,9 +1,11 @@
 package config
 
 import (
+	"encoding/hex"
+	"encoding/json"
+	"os/exec"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 type TagString reflect.StructTag
@@ -20,29 +22,71 @@ func (d TagString) Get(key string) string {
 	return reflect.StructTag(d).Get(key)
 }
 
-// PreludeCommand
+// ShellCommand
 // A command run before capturing the video device
-// Example: shell:"bash" args:"-c" cmd:"ls -al"
-type PreludeCommand TagString
+// Example: ["ls", "-al"]
+type ShellCommand struct {
+	decoded []string
 
-func (d PreludeCommand) Get() (string, []string) {
-	if d == "" {
-		return "", nil
+	Command string
+}
+
+func (d ShellCommand) ToStringArray() ([]string, error) {
+	if d.Command == "" {
+		return nil, nil
 	}
 
-	tag := reflect.StructTag(d)
-
-	shell := tag.Get("shell")
-	if shell == "" {
-		return "", nil
+	if d.decoded != nil {
+		return d.decoded, nil
 	}
 
-	args := strings.Split(tag.Get("args"), " ")
+	var args []string
 
-	cmd := tag.Get("cmd")
+	err := json.Unmarshal([]byte(d.Command), &args)
+	if err != nil {
+		return nil, err
+	}
+
+	d.decoded = args
+
+	return args, nil
+}
+
+func (d ShellCommand) ToCommandParams() (string, []string, error) {
+	args, err := d.ToStringArray()
+	if err != nil {
+		return "", nil, err
+	}
+
+	if len(args) == 0 {
+		return "", nil, nil
+	}
+
+	return args[0], args[1:], nil
+}
+
+func (d ShellCommand) ToCommand() (*exec.Cmd, error) {
+	cmd, args, err := d.ToCommandParams()
+	if err != nil {
+		return nil, err
+	}
+
 	if cmd == "" {
-		return "", nil
+		return nil, nil
 	}
 
-	return shell, append(args, cmd)
+	return exec.Command(cmd, args...), nil
+}
+
+func NewShellCommand(cmd string) ShellCommand {
+	return ShellCommand{Command: cmd}
+}
+
+type HexStringMarker string
+
+func (d HexStringMarker) ToByteArray() ([]byte, error) {
+	if d == "" {
+		return nil, nil
+	}
+	return hex.DecodeString(string(d))
 }

@@ -21,3 +21,11 @@ type Driver interface {
 	GetFrame() (config.Frame, Changed, error)
 	GetNextImageRects(count config.SliceCount, full bool) ([]config.Rect, error)
 }
+
+type Options struct {
+	Width          int
+	Height         int
+	FrameRate      float64
+	FlipCode       config.FlipCode
+	PreludeCommand config.ShellCommand
+}

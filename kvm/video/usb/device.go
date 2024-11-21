@@ -10,18 +10,12 @@ import (
 	"gocv.io/x/gocv"
 	"image"
 	"image/color"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
 )
 
 var log = logger.NewVerboseLogger("[video-usb]")
-
-type Commander struct {
-	Command string
-	Args    []string
-}
 
 type Device struct {
 	video.Driver
@@ -42,7 +36,7 @@ type Device struct {
 	Height         int
 	FrameRate      float64
 	FlipCode       config.FlipCode
-	PreludeCommand Commander
+	PreludeCommand config.ShellCommand
 }
 
 func (d *Device) GetMat() (*gocv.Mat, video.Changed, error) {
@@ -81,8 +75,10 @@ func (d *Device) Open() error {
 
 	var err error
 
-	if d.PreludeCommand.Command != "" {
-		cmd := exec.Command(d.PreludeCommand.Command, d.PreludeCommand.Args...)
+	cmd, err := d.PreludeCommand.ToCommand()
+	if err != nil {
+		return err
+	} else if cmd != nil {
 		output, err := cmd.CombinedOutput()
 		log.Println("prelude command:", strings.TrimSpace(string(output)))
 		if err != nil {
@@ -284,11 +280,7 @@ func ImageChanged(img1, img2 image.Image, size image.Point, offsetX, offsetY, wi
 }
 
 type Options struct {
-	Width          int
-	Height         int
-	FrameRate      float64
-	FlipCode       config.FlipCode
-	PreludeCommand config.PreludeCommand
+	video.Options
 }
 
 func NewDevice(src string, options *Options) video.Driver {
@@ -300,27 +292,22 @@ func NewDevice(src string, options *Options) video.Driver {
 		options.Width = 1920
 	}
 	if options.Height == 0 {
-		options.Height = 1920
+		options.Height = 1080
 	}
 	if options.FrameRate == 0 {
 		options.FrameRate = 30
 	}
 
-	cmd, args := options.PreludeCommand.Get()
-
 	dev := &Device{
 		locker:          &sync.Mutex{},
 		interpolateTime: time.Duration(float64(time.Second) / options.FrameRate),
 
-		Src:       src,
-		Width:     options.Width,
-		Height:    options.Height,
-		FrameRate: options.FrameRate,
-		FlipCode:  options.FlipCode,
-		PreludeCommand: Commander{
-			Command: cmd,
-			Args:    args,
-		},
+		Src:            src,
+		Width:          options.Width,
+		Height:         options.Height,
+		FrameRate:      options.FrameRate,
+		FlipCode:       options.FlipCode,
+		PreludeCommand: options.PreludeCommand,
 	}
 
 	return dev

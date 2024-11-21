@@ -4,6 +4,8 @@
 # `ext` argument is written in Golang struct tag format
 # See https://go.dev/ref/spec#Tag
 
+# Shell command must be written in the JSON array format to prevent unexpected splitting.
+
 [websocket]
 # `127.0.0.1:8080` listen for 127.0.0.1 only
 # `:8080` can be accessed by any device
@@ -25,12 +27,15 @@ ext = "baud:\"115200\""
 
 [video]
 # A command run before video capture.
-#prelude_command = "shell:\"bash\" args:\"-c\" cmd:\"usbreset Hagibis\""
-# `usb` only
-type = "usb"
-# Video device index when using `usb` as driver.
-# Either the index of video device or the path to video device.
-src = "0"
+#prelude_command = "[\"usbreset\", \"Hagibis\"]"
+# usb(deprecated), shell
+type = "shell"
+
+# usb: either the index of video device or the path to video device.
+#src = "0"
+# clt: command to get frame
+src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to=-\", \"--set-fmt-video=\\\"width=1270,height=720,pixelformat=MJPG\\\"\"]"
+
 width = 1270
 height = 720
 frame_rate = 30.0
@@ -40,7 +45,11 @@ quality = 50
 flip_code = -2
 # `4` will slice frame into a 4x4 grid, total 16 pieces
 slice_count = 4
+
+# usb: leave empty
 ext = ""
+# clt:
+ext = "startmarker:\"FFD8\" endmarker:\"FFD9\"" # use to split mjpeg encoded stream
 
 [mouse]
 # none, serialport
@@ -66,7 +75,7 @@ cursor_y_scale = 45.5754925372
 #ext = "baud:\"115200\""
 type = "shell"
 # Demo for OrangePI https://github.com/orangepi-xunlong/wiringOP
-ext = "open:\"gpio mode $PIN out\" press:\"gpio write $PIN 1\" release:\"gpio write $PIN 0\""
+ext = "open:\"[\\\"gpio\\\", \\\"mode\\\", \\\"$PIN\\\", \\\"out\\\"]\" press:\"[\\\"gpio\\\", \\\"write\\\", \\\"$PIN\\\", \\\"1\\\"]\" release:\"[\\\"gpio\\\", \\\"write\\\", \\\"$PIN\\\", \\\"0\\\"]\""
 # GPIO Pin for power button
 pwr_btn = "0"
 # GPIO Pin for reset button
