@@ -13,8 +13,8 @@ const DefaultConfigPath = "kvm.toml"
 type VideoDriverType string
 
 const (
-	VideoUSBDevice VideoDriverType = "usb"
-	VideoCltDevice VideoDriverType = "clt"
+	VideoUSBDevice   VideoDriverType = "usb"
+	VideoShellDevice VideoDriverType = "shell"
 )
 
 type KeyboardDriverType string
@@ -114,7 +114,7 @@ func GetConfig() (Config, error) {
 			Type: KeyboardNone,
 		},
 		Video: Video{
-			PreludeCommand: "",
+			PreludeCommand: NewShellCommand(""),
 			Width:          1920,
 			Height:         1080,
 			Type:           VideoUSBDevice,

@@ -1,11 +1,11 @@
 package factory
 
 import (
+	"errors"
 	"fmt"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
-	"github.com/allape/openkvm/kvm/video/clt"
-	"github.com/allape/openkvm/kvm/video/usb"
+	"github.com/allape/openkvm/kvm/video/shell"
 )
 
 func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
@@ -19,10 +19,11 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 
 	switch conf.Video.Type {
 	case config.VideoUSBDevice:
-		vd = usb.NewDevice(conf.Video.Src, &usb.Options{
-			Options: vos,
-		})
-	case config.VideoCltDevice:
+		return nil, errors.New("video usb device is deprecated")
+		//vd = usb.NewDevice(conf.Video.Src, &usb.Options{
+		//	Options: vos,
+		//})
+	case config.VideoShellDevice:
 		if conf.Video.Src == "" {
 			return nil, fmt.Errorf("video source is empty")
 		}
@@ -36,10 +37,10 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 			return nil, err
 		}
 
-		vd = clt.NewClt(config.NewShellCommand(conf.Video.Src), &clt.Options{
-			Options:    vos,
-			StartMaker: startMaker,
-			EndMarker:  endMarker,
+		vd = shell.NewDriver(config.NewShellCommand(conf.Video.Src), &shell.Options{
+			Options:     vos,
+			StartMarker: startMaker,
+			EndMarker:   endMarker,
 		})
 	default:
 		return nil, fmt.Errorf("unknown video driver: %s", conf.Video.Type)

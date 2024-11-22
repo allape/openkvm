@@ -35,6 +35,8 @@ type = "shell"
 #src = "0"
 # clt: command to get frame
 src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to=-\", \"--set-fmt-video=\\\"width=1270,height=720,pixelformat=MJPG\\\"\"]"
+# capture FaceTime camera on macOS
+#src = "[\"ffmpeg\", \"-f\", \"avfoundation\", \"-framerate\", \"30\", \"-pixel_format\", \"uyvy422\", \"-video_size\", \"1280x720\", \"-i\", \"default\", \"-f\", \"mjpeg\", \"-\"]"
 
 width = 1270
 height = 720

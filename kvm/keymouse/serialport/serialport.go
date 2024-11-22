@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var log = logger.NewVerboseLogger("[serialport]")
+var log = logger.NewVerboseLogger("[kvm.keymouse.serialport]")
 
 const MagicWord = "open-kvm"
 
