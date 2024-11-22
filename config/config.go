@@ -37,7 +37,6 @@ const (
 	ButtonNone       ButtonDriverType = "none"
 	ButtonSerialPort ButtonDriverType = "serialport"
 	ButtonShell      ButtonDriverType = "shell"
-	ButtonGPIO       ButtonDriverType = "gpio" // TODO not supported yet
 )
 
 type Websocket struct {
@@ -48,13 +47,12 @@ type Websocket struct {
 
 type Video struct {
 	PreludeCommand ShellCommand    `toml:"prelude_command"`
-	Width          int             `toml:"width"`
-	Height         int             `toml:"height"`
 	Type           VideoDriverType `toml:"type"`
 	Src            string          `toml:"src"`
+	Width          int             `toml:"width"`
+	Height         int             `toml:"height"`
 	FrameRate      float64         `toml:"frame_rate"`
 	Quality        int             `toml:"quality"`
-	FlipCode       FlipCode        `toml:"flip_code"`
 	SliceCount     SliceCount      `toml:"slice_count"`
 	Ext            TagString       `toml:"ext"`
 }
@@ -115,13 +113,12 @@ func GetConfig() (Config, error) {
 		},
 		Video: Video{
 			PreludeCommand: NewShellCommand(""),
-			Width:          1920,
-			Height:         1080,
-			Type:           VideoUSBDevice,
+			Type:           "error",
 			Src:            "0",
-			FlipCode:       NoFlip,
-			FrameRate:      30,
-			SliceCount:     4,
+			Width:          1270,
+			Height:         720,
+			FrameRate:      15,
+			Quality:        100,
 			Ext:            "",
 		},
 		Mouse: Mouse{

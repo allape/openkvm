@@ -13,7 +13,8 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 		Width:          conf.Video.Width,
 		Height:         conf.Video.Height,
 		FrameRate:      conf.Video.FrameRate,
-		FlipCode:       conf.Video.FlipCode,
+		Quality:        conf.Video.Quality,
+		SliceCount:     conf.Video.SliceCount,
 		PreludeCommand: conf.Video.PreludeCommand,
 	}
 
@@ -27,20 +28,8 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 		if conf.Video.Src == "" {
 			return nil, fmt.Errorf("video source is empty")
 		}
-
-		startMaker, err := config.HexStringMarker(conf.Video.Ext.Get("startmarker")).ToByteArray()
-		if err != nil {
-			return nil, err
-		}
-		endMarker, err := config.HexStringMarker(conf.Video.Ext.Get("endmarker")).ToByteArray()
-		if err != nil {
-			return nil, err
-		}
-
 		vd = shell.NewDriver(config.NewShellCommand(conf.Video.Src), &shell.Options{
-			Options:     vos,
-			StartMarker: startMaker,
-			EndMarker:   endMarker,
+			Options: vos,
 		})
 	default:
 		return nil, fmt.Errorf("unknown video driver: %s", conf.Video.Type)

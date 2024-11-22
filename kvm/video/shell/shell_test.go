@@ -27,8 +27,6 @@ func TestDriver(t *testing.T) {
 				Height:    720,
 				FrameRate: 30,
 			},
-			StartMarker: []byte{0xff, 0xd8},
-			EndMarker:   []byte{0xff, 0xd9},
 		},
 	)
 

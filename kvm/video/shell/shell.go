@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var l = logger.NewVerboseLogger("[kvm.video.clt]")
+var l = logger.NewVerboseLogger("[kvm.video.shell]")
 
 type Driver struct {
 	video.Driver
@@ -51,6 +51,11 @@ func (d *Driver) Open() error {
 
 	if d.process != nil {
 		return nil
+	}
+
+	prelude, err := d.preludeCmd.ToCommand()
+	if err != nil {
+		return err
 	}
 
 	cmd, err := d.cmd.ToCommand()
@@ -133,6 +138,14 @@ func (d *Driver) Open() error {
 	}()
 
 	d.process = cmd.Process
+
+	if prelude != nil {
+		output, err := prelude.CombinedOutput()
+		if err != nil {
+			return errors.New(string(output))
+		}
+		l.Println("prelude output:", string(output))
+	}
 
 	return cmd.Start()
 }
@@ -240,8 +253,6 @@ func (d *Driver) GetNextImageRects(sliceCount config.SliceCount, full bool) ([]c
 
 type Options struct {
 	video.Options
-	StartMarker []byte
-	EndMarker   []byte
 }
 
 func NewDriver(src config.ShellCommand, options *Options) video.Driver {
@@ -271,7 +282,7 @@ func NewDriver(src config.ShellCommand, options *Options) video.Driver {
 		Width:       options.Width,
 		Height:      options.Width,
 		FrameRate:   options.FrameRate,
-		StartMarker: options.StartMarker,
-		EndMarker:   options.EndMarker,
+		StartMarker: []byte{0xff, 0xd8},
+		EndMarker:   []byte{0xff, 0xd9},
 	}
 }

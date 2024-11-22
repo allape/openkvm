@@ -26,6 +26,7 @@ type Options struct {
 	Width          int
 	Height         int
 	FrameRate      float64
-	FlipCode       config.FlipCode
+	Quality        int
+	SliceCount     config.SliceCount
 	PreludeCommand config.ShellCommand
 }

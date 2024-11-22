@@ -29,11 +29,11 @@ ext = "baud:\"115200\""
 # A command run before video capture.
 #prelude_command = "[\"usbreset\", \"Hagibis\"]"
 # usb(deprecated), shell
-type = "shell"
+type = "shell" # only mpeg format is supported
 
 # usb: either the index of video device or the path to video device.
 #src = "0"
-# clt: command to get frame
+# shell: command to get frame
 src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to=-\", \"--set-fmt-video=\\\"width=1270,height=720,pixelformat=MJPG\\\"\"]"
 # capture FaceTime camera on macOS
 #src = "[\"ffmpeg\", \"-f\", \"avfoundation\", \"-framerate\", \"30\", \"-pixel_format\", \"uyvy422\", \"-video_size\", \"1280x720\", \"-i\", \"default\", \"-f\", \"mjpeg\", \"-\"]"
@@ -41,17 +41,7 @@ src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to
 width = 1270
 height = 720
 frame_rate = 30.0
-# min 0, max 100
-quality = 50
-# horizontal(0), vertical(1), both(-1), off(-2)
-flip_code = -2
-# `4` will slice frame into a 4x4 grid, total 16 pieces
-slice_count = 4
-
-# usb: leave empty
 ext = ""
-# clt:
-ext = "startmarker:\"FFD8\" endmarker:\"FFD9\"" # use to split mjpeg encoded stream
 
 [mouse]
 # none, serialport
@@ -71,7 +61,7 @@ cursor_x_scale = 25.6632
 cursor_y_scale = 45.5754925372
 
 [button]
-# none, serialport, shell, gpio
+# none, serialport, shell
 #type = "serialport"
 #src = "/dev/ttyACM0"
 #ext = "baud:\"115200\""

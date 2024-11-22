@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/button"
-	"github.com/allape/openkvm/kvm/button/gpio"
 	"github.com/allape/openkvm/kvm/button/serialport"
 	"github.com/allape/openkvm/kvm/button/shell"
 	"github.com/allape/openkvm/kvm/keymouse"
@@ -42,11 +41,6 @@ func ButtonFromConfig(conf config.Config, keyboard keymouse.Driver, mouse keymou
 	case config.ButtonShell:
 		log.Println("button driver is shell:", conf.Button.Ext)
 		bd = &shell.Button{
-			Config: conf.Button,
-		}
-	case config.ButtonGPIO:
-		log.Println("button driver is gpio")
-		bd = &gpio.Button{
 			Config: conf.Button,
 		}
 	default:
