@@ -119,7 +119,7 @@ func GetConfig() (Config, error) {
 			PreludeCommand: "",
 			Type:           "error",
 			Src:            "0",
-			Width:          1270,
+			Width:          1280,
 			Height:         720,
 			FrameRate:      15,
 			Quality:        100,

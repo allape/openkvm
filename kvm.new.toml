@@ -34,13 +34,17 @@ type = "shell" # only mpeg format is supported
 # usb: either the index of video device or the path to video device.
 #src = "0"
 # shell: command to get frame
-src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to=-\", \"--set-fmt-video=width=1270,height=720,pixelformat=MJPG\"]"
+src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to=-\", \"--set-fmt-video=width=1280,height=720,pixelformat=MJPG\"]"
 # capture FaceTime camera on macOS
 #src = "[\"ffmpeg\", \"-f\", \"avfoundation\", \"-framerate\", \"30\", \"-pixel_format\", \"uyvy422\", \"-video_size\", \"1280x720\", \"-i\", \"default\", \"-f\", \"mjpeg\", \"-\"]"
 
 width = 1280
 height = 720
 frame_rate = 30.0
+quality = 80
+# This is the base number of slices to divide the video into.
+#   4 means 4x4, 16 in total.
+slice_count = 4
 ext = ""
 
 [mouse]
@@ -50,11 +54,11 @@ src = "/dev/ttyACM0"
 ext = "baud:\"115200\""
 
 # A factor to adjust the cursor move distance when the video is scaled.
-# Suggested scale for (1920, 1080):
+# Suggested scale:
 #   (1920, 1080):
 #     cursor_x_scale = 17.00
 #     cursor_x_scale = 28.78
-#   (1270, 720):
+#   (1280, 720):
 #     cursor_x_scale = 25.6632
 #     cursor_y_scale = 45.5754925372
 cursor_x_scale = 25.6632
