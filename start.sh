@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-#go build -o openkvm .
+chmod +x ./openkvm
 
 nohup ./openkvm > openkvm.log 2>&1 &

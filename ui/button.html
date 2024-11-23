@@ -63,9 +63,9 @@
     const qs = new URLSearchParams({ type: btnType, ms: duration });
     const res = await fetch(`/api/button?${qs.toString()}`);
     if (res.ok) {
-      console.log('Button clicked');
+      alert('Done');
     } else {
-      console.error(`Failed to click button: ${await res.text()}`);
+      alert(`Failed to click button: ${await res.text()}`);
     }
   }
 
