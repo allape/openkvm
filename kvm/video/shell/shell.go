@@ -17,7 +17,6 @@ import (
 )
 
 var log = logger.New("[kvm.video.shell]")
-var elo = logger.New("[kvm.video.shell.stderr]")
 var verbose = logger.NewVerboseLogger("[kvm.video.shell]")
 
 type Driver struct {
@@ -148,7 +147,7 @@ func (d *Driver) Open() error {
 				}
 				return
 			}
-			elo.Print(string(buf[:n]))
+			verbose.Print(string(buf[:n]))
 		}
 	}()
 
