@@ -15,7 +15,7 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 		FrameRate:      conf.Video.FrameRate,
 		Quality:        conf.Video.Quality,
 		SliceCount:     conf.Video.SliceCount,
-		PreludeCommand: conf.Video.PreludeCommand,
+		PreludeCommand: config.NewShellCommand(conf.Video.PreludeCommand),
 	}
 
 	switch conf.Video.Type {

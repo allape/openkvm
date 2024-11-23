@@ -19,6 +19,7 @@ import (
 )
 
 var log = logger.New("[main]")
+var verbose = logger.NewVerboseLogger("[main]")
 
 func main() {
 	conf, err := config.GetConfig()
@@ -96,10 +97,14 @@ func main() {
 		}
 		defer func() {
 			_ = conn.Close()
+			verbose.Println("client disconnected")
 			if atomic.AddInt64(&clientCount, -1) == 0 {
+				verbose.Println("no clients, closing video")
 				_ = v.Close()
 			}
 		}()
+
+		verbose.Println("client connected")
 
 		atomic.AddInt64(&clientCount, 1)
 		err = v.Open()

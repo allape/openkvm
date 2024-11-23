@@ -1,0 +1,35 @@
+[websocket]
+addr = ":8080"
+path = "/websockify"
+cors = false
+
+[vnc]
+path = "../noVNC"
+
+[keyboard]
+type = "serialport"
+src = "/dev/ttyACM0"
+ext = "baud:\"115200\""
+
+[mouse]
+type = "serialport"
+src = "/dev/ttyACM0"
+ext = "baud:\"115200\""
+cursor_x_scale = 25.6632
+cursor_y_scale = 45.5754925372
+
+[video]
+prelude_command = "[\"usbreset\", \"UGREEN 25854\"]"
+type = "shell"
+src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to=-\", \"--set-fmt-video=width=1280,height=720,pixelformat=MJPG\"]"
+width = 1280
+height = 720
+frame_rate = 30.0
+quality = 75
+slice_count = 4
+
+[button]
+type = "shell"
+ext = "open:\"[\\\"gpio\\\", \\\"mode\\\", \\\"$PIN\\\", \\\"out\\\"]\" press:\"[\\\"gpio\\\", \\\"write\\\", \\\"$PIN\\\", \\\"1\\\"]\" release:\"[\\\"gpio\\\", \\\"write\\\", \\\"$PIN\\\", \\\"0\\\"]\""
+pwr_btn = "3"
+rst_btn = "4"

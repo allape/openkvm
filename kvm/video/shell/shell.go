@@ -16,7 +16,9 @@ import (
 	"time"
 )
 
-var log = logger.NewVerboseLogger("[kvm.video.shell]")
+var log = logger.New("[kvm.video.shell]")
+var elo = logger.New("[kvm.video.shell.stderr]")
+var verbose = logger.NewVerboseLogger("[kvm.video.shell]")
 
 type Driver struct {
 	video.Driver
@@ -74,15 +76,20 @@ func (d *Driver) Open() error {
 		return err
 	}
 
+	readyChan := make(chan struct{}, 1)
+
 	go func() {
+		ready := false
 		started := false
+
 		var frameBuffer []byte
 		buf := make([]byte, 1024)
+
 		for {
 			n, err := stdout.Read(buf)
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
-					log.Println(err)
+					verbose.Println(err)
 				}
 				return
 			}
@@ -98,6 +105,13 @@ func (d *Driver) Open() error {
 					if index != -1 {
 						started = true
 						seg = seg[index:]
+
+						if !ready {
+							ready = true
+							go func() {
+								readyChan <- struct{}{}
+							}()
+						}
 					} else {
 						seg = nil
 						continue
@@ -110,6 +124,7 @@ func (d *Driver) Open() error {
 					d.bufferLocker.Lock()
 					d.frameBuffer = append(frameBuffer, seg[:index]...)
 					d.frameBufferUpdatedAt = time.Now().UnixMicro()
+					verbose.Println("frame updated")
 					d.bufferLocker.Unlock()
 					started = false
 					frameBuffer = nil
@@ -133,21 +148,31 @@ func (d *Driver) Open() error {
 				}
 				return
 			}
-			log.Println(string(buf[:n]))
+			elo.Print(string(buf[:n]))
 		}
 	}()
 
 	d.process = cmd.Process
 
 	if prelude != nil {
+		verbose.Println(prelude.Path, prelude.Args)
 		output, err := prelude.CombinedOutput()
 		if err != nil {
 			return errors.New(string(output))
 		}
-		log.Println("prelude output:", string(output))
+		verbose.Print("prelude output:", string(output))
 	}
 
-	return cmd.Start()
+	verbose.Println(cmd.Path, cmd.Args)
+
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	<-readyChan
+
+	return nil
 }
 
 func (d *Driver) Close() error {

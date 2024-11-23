@@ -46,7 +46,7 @@ type Websocket struct {
 }
 
 type Video struct {
-	PreludeCommand ShellCommand    `toml:"prelude_command"`
+	PreludeCommand string          `toml:"prelude_command"`
 	Type           VideoDriverType `toml:"type"`
 	Src            string          `toml:"src"`
 	Width          int             `toml:"width"`
@@ -108,11 +108,15 @@ func GetConfig() (Config, error) {
 	log.Println("reading config file:", configFile)
 
 	config := Config{
+		Websocket: Websocket{
+			Addr: ":8080",
+			Path: "/websockify",
+		},
 		Keyboard: Keyboard{
 			Type: KeyboardNone,
 		},
 		Video: Video{
-			PreludeCommand: NewShellCommand(""),
+			PreludeCommand: "",
 			Type:           "error",
 			Src:            "0",
 			Width:          1270,
@@ -123,10 +127,6 @@ func GetConfig() (Config, error) {
 		},
 		Mouse: Mouse{
 			Type: MouseNone,
-		},
-		Websocket: Websocket{
-			Addr: ":8080",
-			Path: "/websockify",
 		},
 		VNC: VNC{
 			Path: "",

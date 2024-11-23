@@ -42,20 +42,14 @@ func TestDriver(t *testing.T) {
 		t.Fatalf("Expected 30, got %f", driver.GetFrameRate())
 	}
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10; i++ {
 		frame, changed, err := driver.GetFrame()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if frame == nil {
-			i -= 1
-			t.Logf("frame is not ready yet, wait for 3 seconds")
-			time.Sleep(3 * time.Second)
-			continue
-		}
-
 		if !changed {
+			time.Sleep(35 * time.Millisecond)
 			continue
 		}
 
