@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var l = logger.NewVerboseLogger("[kvm.video.shell]")
+var log = logger.NewVerboseLogger("[kvm.video.shell]")
 
 type Driver struct {
 	video.Driver
@@ -82,7 +82,7 @@ func (d *Driver) Open() error {
 			n, err := stdout.Read(buf)
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
-					l.Println(err)
+					log.Println(err)
 				}
 				return
 			}
@@ -129,11 +129,11 @@ func (d *Driver) Open() error {
 			n, err := stderr.Read(buf)
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
-					l.Println(err)
+					log.Println(err)
 				}
 				return
 			}
-			l.Println(string(buf[:n]))
+			log.Println(string(buf[:n]))
 		}
 	}()
 
@@ -144,7 +144,7 @@ func (d *Driver) Open() error {
 		if err != nil {
 			return errors.New(string(output))
 		}
-		l.Println("prelude output:", string(output))
+		log.Println("prelude output:", string(output))
 	}
 
 	return cmd.Start()

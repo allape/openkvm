@@ -1,6 +1,6 @@
 module github.com/allape/openkvm
 
-go 1.23.1
+go 1.23.3
 
 require (
 	github.com/fogleman/gg v1.3.0

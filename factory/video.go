@@ -35,10 +35,10 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 		return nil, fmt.Errorf("unknown video driver: %s", conf.Video.Type)
 	}
 
-	err = vd.Open()
-	if err != nil {
-		return nil, err
-	}
+	//err = vd.Open()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return vd, err
 }

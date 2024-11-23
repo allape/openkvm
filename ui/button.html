@@ -57,6 +57,9 @@
    * @param duration {Millisecond}
    */
   async function click(btnType, duration) {
+    if (!confirm(`Are you sure to click ${btnType} button for ${duration}ms?`)) {
+      return;
+    }
     const qs = new URLSearchParams({ type: btnType, ms: duration });
     const res = await fetch(`/api/button?${qs.toString()}`);
     if (res.ok) {

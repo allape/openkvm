@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -85,6 +86,8 @@ func main() {
 		}
 	}
 
+	clientCount := int64(0)
+
 	http.HandleFunc(conf.Websocket.Path, func(writer http.ResponseWriter, request *http.Request) {
 		conn, err := upgrader.Upgrade(writer, request, nil)
 		if err != nil {
@@ -93,8 +96,17 @@ func main() {
 		}
 		defer func() {
 			_ = conn.Close()
+			if atomic.AddInt64(&clientCount, -1) == 0 {
+				_ = v.Close()
+			}
 		}()
 
+		atomic.AddInt64(&clientCount, 1)
+		err = v.Open()
+		if err != nil {
+			log.Println("open video:", err)
+			return
+		}
 		err = server.HandleClient(Websockets2KVMClient(conn))
 		if err != nil {
 			log.Println("handle client:", err)
