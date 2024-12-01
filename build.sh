@@ -3,4 +3,4 @@
 export GOARCH=arm64
 export GOOS=linux
 
-go build -o openkvm .
+go build -trimpath -o openkvm .
