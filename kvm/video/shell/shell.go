@@ -151,8 +151,6 @@ func (d *Driver) Open() error {
 		}
 	}()
 
-	d.process = cmd.Process
-
 	if prelude != nil {
 		verbose.Println(prelude.Path, prelude.Args)
 		output, err := prelude.CombinedOutput()
@@ -168,6 +166,8 @@ func (d *Driver) Open() error {
 	if err != nil {
 		return err
 	}
+
+	d.process = cmd.Process
 
 	<-readyChan
 
