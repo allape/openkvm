@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/allape/gogger"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/factory"
 	"github.com/allape/openkvm/kvm"
 	"github.com/allape/openkvm/kvm/button"
-	"github.com/allape/openkvm/logger"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"os"
@@ -17,18 +17,22 @@ import (
 	"time"
 )
 
-var log = logger.New("[main]")
-var verbose = logger.NewVerboseLogger("[main]")
+var l = gogger.New("main")
 
 func main() {
+	err := gogger.InitFromEnv()
+	if err != nil {
+		l.Error().Fatalln("init logger:", err)
+	}
+
 	conf, err := config.GetConfig()
 	if err != nil {
-		log.Fatalln("get config:", err)
+		l.Error().Fatalln("get config:", err)
 	}
 
 	k, err := factory.KeyboardFromConfig(conf)
 	if err != nil {
-		log.Fatalln("keyboard from config:", err)
+		l.Error().Fatalln("keyboard from config:", err)
 	}
 	defer func() {
 		if k != nil {
@@ -38,7 +42,7 @@ func main() {
 
 	v, err := factory.VideoFromConfig(conf)
 	if err != nil {
-		log.Fatalln("video from config:", err)
+		l.Error().Fatalln("video from config:", err)
 	}
 	defer func() {
 		if v != nil {
@@ -48,7 +52,7 @@ func main() {
 
 	m, err := factory.MouseFromConfigOrUseKeyboard(k, conf)
 	if err != nil {
-		log.Fatalln("mouse from config or use keyboard:", err)
+		l.Error().Fatalln("mouse from config or use keyboard:", err)
 	}
 	defer func() {
 		if m != nil {
@@ -58,7 +62,7 @@ func main() {
 
 	b, err := factory.ButtonFromConfig(conf, k, m)
 	if err != nil {
-		log.Fatalln("button from config:", err)
+		l.Error().Fatalln("button from config:", err)
 	}
 	defer func() {
 		if b != nil {
@@ -68,14 +72,14 @@ func main() {
 
 	videoCodec, err := factory.VideoCodecFromConfig(conf)
 	if err != nil {
-		log.Fatalln("video codec from config:", err)
+		l.Error().Fatalln("video codec from config:", err)
 	}
 
 	server, err := kvm.New(k, v, m, videoCodec, kvm.Options{
 		Config: conf,
 	})
 	if err != nil {
-		log.Fatalln("new kvm:", err)
+		l.Error().Fatalln("new kvm:", err)
 	}
 
 	upgrader := websocket.Upgrader{}
@@ -91,29 +95,29 @@ func main() {
 	http.HandleFunc(conf.Websocket.Path, func(writer http.ResponseWriter, request *http.Request) {
 		conn, err := upgrader.Upgrade(writer, request, nil)
 		if err != nil {
-			log.Println("upgrade:", err)
+			l.Error().Println("upgrade:", err)
 			return
 		}
 		defer func() {
 			_ = conn.Close()
-			verbose.Println("client disconnected")
+			l.Debug().Println("client disconnected")
 			if atomic.AddInt64(&clientCount, -1) == 0 {
-				verbose.Println("no clients, closing video")
+				l.Info().Println("no client left, closing video")
 				_ = v.Close()
 			}
 		}()
 
-		verbose.Println("client connected")
+		l.Debug().Println("client connected")
 
 		atomic.AddInt64(&clientCount, 1)
 		err = v.Open()
 		if err != nil {
-			log.Println("open video:", err)
+			l.Error().Println("open video:", err)
 			return
 		}
 		err = server.HandleClient(Websockets2KVMClient(conn))
 		if err != nil {
-			log.Println("handle client:", err)
+			l.Warn().Println("handle client:", err)
 		}
 	})
 
@@ -176,19 +180,19 @@ func main() {
 		writer.WriteHeader(http.StatusOK)
 		_, err = writer.Write([]byte("ok"))
 		if err != nil {
-			log.Println("response button api error:", err)
+			l.Warn().Println("response button api error:", err)
 		}
 	})
 
 	SetupUI(&conf)
 
 	go func() {
-		log.Fatalln(http.ListenAndServe(conf.Websocket.Addr, nil))
+		l.Error().Fatalln(http.ListenAndServe(conf.Websocket.Addr, nil))
 	}()
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	log.Println("started")
+	l.Info().Println("started")
 	sig := <-sigs
-	log.Println("exiting with", sig)
+	l.Info().Println("exiting with", sig)
 }

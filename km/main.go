@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/hex"
 	"errors"
-	"github.com/allape/openkvm/logger"
+	"github.com/allape/gogger"
 	"go.bug.st/serial"
 	"os"
 	"os/signal"
@@ -23,7 +23,7 @@ import (
 // mouse left click at 120, 30
 // 0b00000101 10000000 00000000 01100100 00000000 00011110
 
-var log = logger.New("[serial]")
+var l = gogger.New("serial")
 
 const Name = "/dev/ttyACM0"
 
@@ -33,7 +33,7 @@ func main() {
 	}
 	port, err := serial.Open(Name, mode)
 	if err != nil {
-		log.Fatalln("unable to open port:", err)
+		l.Error().Fatalln("unable to open port:", err)
 	}
 
 	go func(port serial.Port) {
@@ -41,10 +41,10 @@ func main() {
 		for {
 			n, err := port.Read(buf)
 			if err != nil {
-				log.Fatalln("read error:", err)
+				l.Error().Fatalln("read error:", err)
 			}
 			if n == 0 {
-				log.Println("EOF")
+				l.Info().Println("EOF")
 				return
 			}
 			print(string(buf[:n]))
@@ -56,11 +56,11 @@ func main() {
 		for {
 			text, err := reader.ReadString('\n')
 			if err != nil {
-				log.Fatalln("fail to read from stdin:", err)
+				l.Error().Fatalln("fail to read from stdin:", err)
 			}
 
 			text = strings.TrimSpace(text)
-			log.Println(">", text)
+			l.Info().Println(">", text)
 
 			var raw []byte
 
@@ -68,38 +68,38 @@ func main() {
 				text = strings.ReplaceAll(text, " ", "")
 				raw, err = hex.DecodeString(text[2:])
 				if err != nil {
-					log.Println("invalid hex string:", text)
+					l.Warn().Println("invalid hex string:", text)
 					continue
 				}
 			} else if strings.HasPrefix(text, "0b") {
 				text = strings.ReplaceAll(text, " ", "")
 				raw, err = BitsString2Bytes(text[2:])
 				if err != nil {
-					log.Println(err, text)
+					l.Error().Println(err, text)
 					continue
 				}
 			} else {
 				raw = []byte(strings.TrimSpace(text))
 			}
 
-			log.Println("> 0x", hex.EncodeToString(raw))
+			l.Info().Println("> 0x", hex.EncodeToString(raw))
 
 			_, err = s.Write(raw)
 			if err != nil {
-				log.Fatalln("write error:", err)
+				l.Error().Fatalln("write error:", err)
 			}
 			err = s.Drain()
 			if err != nil {
-				log.Fatalln("flush error:", err)
+				l.Error().Fatalln("flush error:", err)
 			}
 		}
 	}(port)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	log.Println("awaiting signal")
+	l.Info().Println("awaiting signal")
 	sig := <-sigs
-	log.Println("exiting with", sig)
+	l.Info().Println("exiting with", sig)
 
 	_ = port.Close()
 }

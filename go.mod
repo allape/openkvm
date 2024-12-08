@@ -3,6 +3,7 @@ module github.com/allape/openkvm
 go 1.23.3
 
 require (
+	github.com/allape/gogger v0.0.0-20241208090122-dda745ad2428
 	github.com/fogleman/gg v1.3.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/gorilla/websocket v1.5.3
@@ -11,7 +12,8 @@ require (
 )
 
 require (
+	github.com/allape/goenv v0.0.0-20241202051618-ce41afb81ebf // indirect
 	github.com/creack/goselect v0.1.2 // indirect
-	golang.org/x/image v0.22.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/image v0.23.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 )

@@ -23,7 +23,7 @@ func SetupUI(conf *config.Config) {
 			writer.WriteHeader(http.StatusOK)
 			_, err := writer.Write([]byte(ButtonHTML))
 			if err != nil {
-				log.Println("response button.html error:", err)
+				l.Warn().Println("response button.html error:", err)
 			}
 		}
 	})

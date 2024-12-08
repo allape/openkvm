@@ -5,7 +5,7 @@ package usb
 //	"github.com/allape/openkvm/config"
 //	"github.com/allape/openkvm/kvm/video"
 //	"github.com/allape/openkvm/kvm/video/placeholder"
-//	"github.com/allape/openkvm/logger"
+//	"github.com/allape/gogger"
 //	"gocv.io/x/gocv"
 //	"image"
 //	"image/color"
@@ -14,7 +14,7 @@ package usb
 //	"time"
 //)
 //
-//var log = logger.NewVerboseLogger("[video-usb]")
+//var l = gogger.New("video.usb")
 //
 //type Device struct {
 //	video.Driver
@@ -79,7 +79,7 @@ package usb
 //		return err
 //	} else if cmd != nil {
 //		output, err := cmd.CombinedOutput()
-//		log.Println("prelude command:", strings.TrimSpace(string(output)))
+//		l.Debug().Println("prelude command:", strings.TrimSpace(string(output)))
 //		if err != nil {
 //			return err
 //		}

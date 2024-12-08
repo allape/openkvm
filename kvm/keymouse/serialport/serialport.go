@@ -2,15 +2,15 @@ package serialport
 
 import (
 	"errors"
+	"github.com/allape/gogger"
 	"github.com/allape/openkvm/kvm/keymouse"
-	"github.com/allape/openkvm/logger"
 	"go.bug.st/serial"
 	"strings"
 	"sync"
 	"time"
 )
 
-var log = logger.NewVerboseLogger("[kvm.keymouse.serialport]")
+var l = gogger.New("kvm.keymouse.serialport")
 
 const MagicWord = "open-kvm"
 
@@ -47,15 +47,15 @@ func (d *KeyboardMouseDriver) Open() error {
 		for {
 			n, err := port.Read(buf)
 			if err != nil {
-				log.Fatalln("read error:", err)
+				l.Error().Println("read error:", err)
 			}
 			if n == 0 {
-				log.Println("EOF")
+				l.Warn().Println("EOF")
 				return
 			}
 			lines := strings.Split(unfinishedLine+string(buf[:n]), "\n")
 			for i := 0; i < len(lines)-1; i++ {
-				log.Println(">", lines[i])
+				l.Verbose().Println(">", lines[i])
 			}
 			unfinishedLine = lines[len(lines)-1]
 		}

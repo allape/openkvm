@@ -9,9 +9,9 @@ import (
 func KeyboardFromConfig(conf config.Config) (kd keymouse.Driver, err error) {
 	switch conf.Keyboard.Type {
 	case config.KeyboardNone:
-		log.Println("keyboard driver is none, no keyboard output")
+		l.Warn().Println("keyboard driver is none, no keyboard output")
 	case config.KeyboardSerialPort:
-		log.Println("keyboard driver is serial port:", conf.Keyboard.Src)
+		l.Info().Println("keyboard driver is serial port:", conf.Keyboard.Src)
 		baud, err := conf.Keyboard.Ext.GetInt("baud", 9600)
 		if err != nil {
 			return nil, err
@@ -22,7 +22,7 @@ func KeyboardFromConfig(conf config.Config) (kd keymouse.Driver, err error) {
 	if kd != nil {
 		err = kd.Open()
 		if err != nil {
-			log.Println("open keyboard driver:", err)
+			l.Error().Println("open keyboard driver:", err)
 			//return kd, err
 		}
 	}
@@ -36,9 +36,9 @@ func MouseFromConfigOrUseKeyboard(kd keymouse.Driver, conf config.Config) (md ke
 		conf.Mouse.Ext != conf.Keyboard.Ext {
 		switch conf.Mouse.Type {
 		case config.MouseNone:
-			log.Println("mouse driver is none, no mouse output")
+			l.Warn().Println("mouse driver is none, no mouse output")
 		case config.MouseSerialPort:
-			log.Println("mouse driver is serial port:", conf.Mouse.Src)
+			l.Info().Println("mouse driver is serial port:", conf.Mouse.Src)
 			baud, err := conf.Mouse.Ext.GetInt("baud", 9600)
 			if err != nil {
 				return nil, err
@@ -49,12 +49,12 @@ func MouseFromConfigOrUseKeyboard(kd keymouse.Driver, conf config.Config) (md ke
 		if md != nil {
 			err = md.Open()
 			if err != nil {
-				log.Println("open mouse driver:", err)
+				l.Error().Println("open mouse driver:", err)
 				//return nil, err
 			}
 		}
 	} else {
-		log.Println("mouse driver is same as keyboard driver")
+		l.Info().Println("mouse driver is same as keyboard driver")
 		md = kd
 	}
 

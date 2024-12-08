@@ -1,5 +1,7 @@
 package factory
 
-import "github.com/allape/openkvm/logger"
+import (
+	"github.com/allape/gogger"
+)
 
-var log = logger.New("[factory]")
+var l = gogger.New("factory")

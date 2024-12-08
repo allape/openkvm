@@ -5,12 +5,12 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"github.com/allape/gogger"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/crypto/des"
 	"github.com/allape/openkvm/kvm/codec"
 	"github.com/allape/openkvm/kvm/keymouse"
 	"github.com/allape/openkvm/kvm/video"
-	"github.com/allape/openkvm/logger"
 	"io"
 	"slices"
 	"sync"
@@ -36,7 +36,7 @@ const (
 	VNCAuthentication SecurityType = 2
 )
 
-var log = logger.NewVerboseLogger("[kvm]")
+var l = gogger.New("kvm")
 
 type PixelFormat struct {
 	BitsPerPixel uint8
@@ -192,7 +192,7 @@ func (s *Server) HandleClient(client Client) error {
 			continue
 		}
 
-		//log.Println("msg:", hex.EncodeToString(msg))
+		//l.Verbose().Println("msg:", hex.EncodeToString(msg))
 
 		switch msg[0] {
 		case 0: // SetPixelFormat
@@ -204,12 +204,12 @@ func (s *Server) HandleClient(client Client) error {
 				defer s.locker.Unlock()
 				rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, full)
 				if err != nil {
-					log.Println("GetNextImageRects error:", err)
+					l.Error().Println("GetNextImageRects error:", err)
 					//continue
 				}
 				msg, err = s.VideoCodec.FramebufferUpdate(rects)
 				if err != nil {
-					log.Println("FramebufferUpdate error:", err)
+					l.Error().Println("FramebufferUpdate error:", err)
 					//continue
 				}
 
@@ -229,16 +229,16 @@ func (s *Server) HandleClient(client Client) error {
 			}
 		case 4: // KeyEvent
 			if s.Keyboard == nil {
-				log.Println("Keyboard driver is not available")
+				l.Warn().Println("Keyboard driver is not available")
 				continue
 			}
 			err := s.Keyboard.SendKeyEvent(msg)
 			if err != nil {
-				log.Println("SendKeyEvent error:", err)
+				l.Error().Println("SendKeyEvent error:", err)
 			}
 		case 5: // PointerEvent
 			if s.Mouse == nil {
-				log.Println("Mouse driver is not available")
+				l.Warn().Println("Mouse driver is not available")
 				continue
 			}
 
@@ -256,17 +256,17 @@ func (s *Server) HandleClient(client Client) error {
 				oldY := binary.BigEndian.Uint16(msg[4:6])
 				x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorXScale)
 				y := uint16(float64(oldY) * s.Options.Config.Mouse.CursorYScale)
-				//log.Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", oldX, oldY, x, y)
+				//l.Verbose().Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", oldX, oldY, x, y)
 				copy(msg[2:6], []byte{byte(x >> 8), byte(x), byte(y >> 8), byte(y)})
 			}
 
 			err := s.Mouse.SendPointerEvent(msg)
 			if err != nil {
-				log.Println("SendPointerEvent error:", err)
+				l.Error().Println("SendPointerEvent error:", err)
 			}
 		case 6: // ClientCutText
 		default:
-			log.Println("Unsupported message type:", hex.EncodeToString(msg))
+			l.Warn().Println("Unsupported message type:", hex.EncodeToString(msg))
 		}
 	}
 }

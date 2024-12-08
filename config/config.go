@@ -1,12 +1,12 @@
 package config
 
 import (
-	"github.com/allape/openkvm/logger"
+	"github.com/allape/gogger"
 	"github.com/pelletier/go-toml/v2"
 	"os"
 )
 
-var log = logger.New("[config]")
+var l = gogger.New("config")
 
 const DefaultConfigPath = "kvm.toml"
 
@@ -107,7 +107,7 @@ func GetConfig() (Config, error) {
 		configFile = os.Args[1]
 	}
 
-	log.Println("reading config file:", configFile)
+	l.Info().Println("reading config file:", configFile)
 
 	config := Config{
 		Websocket: Websocket{
@@ -153,13 +153,13 @@ func GetConfig() (Config, error) {
 		return config, err
 	}
 
-	log.Println("use config:", config)
+	l.Debug().Println("use config:", config)
 
 	passwordLength := len(config.VNC.Password)
 	if passwordLength == 0 {
-		log.Println("VNC password is empty, no authentication will be used")
+		l.Warn().Println("VNC password is empty, no authentication will be used")
 	} else if passwordLength != 8 {
-		log.Println("VNC password length is not 8, it will be truncated to 8 or filled with 0x0")
+		l.Warn().Println("VNC password length is not 8, it will be truncated to 8 or filled with 0x0")
 		config.VNC.Password = config.VNC.Password[:8]
 	}
 

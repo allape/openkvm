@@ -3,10 +3,10 @@ package shell
 import (
 	"bytes"
 	"errors"
+	"github.com/allape/gogger"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
 	"github.com/allape/openkvm/kvm/video/placeholder"
-	"github.com/allape/openkvm/logger"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -16,8 +16,7 @@ import (
 	"time"
 )
 
-var log = logger.New("[kvm.video.shell]")
-var verbose = logger.NewVerboseLogger("[kvm.video.shell]")
+var l = gogger.New("kvm.video.shell")
 
 type Driver struct {
 	video.Driver
@@ -88,7 +87,7 @@ func (d *Driver) Open() error {
 			n, err := stdout.Read(buf)
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
-					verbose.Println(err)
+					l.Verbose().Println(err)
 				}
 				return
 			}
@@ -123,7 +122,7 @@ func (d *Driver) Open() error {
 					d.bufferLocker.Lock()
 					d.frameBuffer = append(frameBuffer, seg[:index]...)
 					d.frameBufferUpdatedAt = time.Now().UnixMicro()
-					verbose.Println("frame updated")
+					l.Verbose().Println("frame updated")
 					d.bufferLocker.Unlock()
 					started = false
 					frameBuffer = nil
@@ -143,24 +142,24 @@ func (d *Driver) Open() error {
 			n, err := stderr.Read(buf)
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
-					log.Println(err)
+					l.Error().Println(err)
 				}
 				return
 			}
-			verbose.Print(string(buf[:n]))
+			l.Verbose().Print(string(buf[:n]))
 		}
 	}()
 
 	if prelude != nil {
-		verbose.Println(prelude.Path, prelude.Args)
+		l.Verbose().Println(prelude.Path, prelude.Args)
 		output, err := prelude.CombinedOutput()
 		if err != nil {
 			return errors.New(string(output))
 		}
-		verbose.Print("prelude output:", string(output))
+		l.Verbose().Print("prelude output:", string(output))
 	}
 
-	verbose.Println(cmd.Path, cmd.Args)
+	l.Verbose().Println(cmd.Path, cmd.Args)
 
 	err = cmd.Start()
 	if err != nil {
