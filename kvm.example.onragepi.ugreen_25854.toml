@@ -5,6 +5,7 @@ cors = false
 
 [vnc]
 path = "../noVNC"
+password = "passwd12"
 
 [keyboard]
 type = "serialport"

@@ -1,9 +1,12 @@
 package kvm
 
 import (
+	"bytes"
+	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"github.com/allape/openkvm/config"
+	"github.com/allape/openkvm/crypto/des"
 	"github.com/allape/openkvm/kvm/codec"
 	"github.com/allape/openkvm/kvm/keymouse"
 	"github.com/allape/openkvm/kvm/video"
@@ -14,7 +17,23 @@ import (
 )
 
 const (
-	Version = "RFB 003.008\n"
+	Version               = "RFB 003.008\n"
+	ChallengeSize         = des.BlockSize * 2
+	NumberOfSecurityTypes = 1
+)
+
+type SecurityResult [4]byte
+
+var (
+	SecurityResultOK   SecurityResult = [4]byte{0, 0, 0, 0}
+	SecurityResultFail SecurityResult = [4]byte{0, 0, 0, 1}
+)
+
+type SecurityType byte
+
+const (
+	None              SecurityType = 1
+	VNCAuthentication SecurityType = 2
 )
 
 var log = logger.NewVerboseLogger("[kvm]")
@@ -40,8 +59,7 @@ type ServerInit struct {
 }
 
 type Options struct {
-	Config   config.Config
-	Password string // not used
+	Config config.Config
 }
 
 type Server struct {
@@ -60,7 +78,7 @@ func (s *Server) CloseClient(client Client, message string) error {
 	if message != "" {
 		length := len(message)
 		bs := make([]byte, 4)
-		binary.LittleEndian.PutUint32(bs, uint32(length))
+		binary.BigEndian.PutUint32(bs, uint32(length))
 
 		// ignore error, close client anyway
 		_, _ = client.Write(append(bs, []byte(message)...))
@@ -69,9 +87,15 @@ func (s *Server) CloseClient(client Client, message string) error {
 }
 
 func (s *Server) HandleClient(client Client) error {
+	password := s.Options.Config.VNC.Password
+	noPassword := password == ""
+
 	handshake := false
+	challenged := noPassword
 	authed := false
 	init := false
+
+	var challenge []byte
 
 	// send full frame without diff process for first request
 	full := true
@@ -98,15 +122,52 @@ func (s *Server) HandleClient(client Client) error {
 			} else {
 				return s.CloseClient(client, "Unsupported protocol version")
 			}
-			_, err = client.Write([]byte{1, 1})
+			if noPassword {
+				_, err = client.Write([]byte{NumberOfSecurityTypes, byte(None)})
+			} else {
+				_, err = client.Write([]byte{NumberOfSecurityTypes, byte(VNCAuthentication)})
+			}
 			if err != nil {
 				return err
 			}
 			continue
 		}
 
+		if !challenged {
+			challenge = make([]byte, ChallengeSize)
+			n, err := rand.Read(challenge)
+			if err != nil {
+				return err
+			} else if n != ChallengeSize {
+				return io.ErrShortWrite
+			}
+
+			_, err = client.Write(challenge)
+			if err != nil {
+				return err
+			}
+			challenged = true
+			continue
+		}
+
 		if !authed {
-			_, err = client.Write([]byte{0, 0, 0, 0})
+			if !noPassword {
+				d := des.New([]byte(password))
+				expectedChallenged := make([]byte, ChallengeSize)
+				err = d.Encrypt(expectedChallenged, challenge)
+				if err != nil {
+					return err
+				}
+				if bytes.Compare(expectedChallenged, msg[:ChallengeSize]) != 0 {
+					_, err = client.Write(SecurityResultFail[:])
+					if err != nil {
+						return err
+					}
+					return s.CloseClient(client, "Password is incorrect")
+				}
+			}
+
+			_, err = client.Write(SecurityResultOK[:])
 			if err != nil {
 				return err
 			}

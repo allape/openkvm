@@ -18,6 +18,8 @@ cors = false
 [vnc]
 # Path to a static served folder, noVNC is recommended.
 #path = "../noVNC"
+username = "openkvm~" # not supported yet
+password = "passwd12"
 
 [keyboard]
 # none, serialport
