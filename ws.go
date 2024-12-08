@@ -7,7 +7,6 @@ import (
 
 type WebsocketsKVMClient struct {
 	Conn *websocket.Conn
-	kvm.Client
 }
 
 func (w *WebsocketsKVMClient) Read(dst []byte) (int, error) {
@@ -31,6 +30,6 @@ func (w *WebsocketsKVMClient) Close() error {
 	return w.Conn.Close()
 }
 
-func Websockets2KVMClient(conn *websocket.Conn) kvm.Client {
-	return &WebsocketsKVMClient{Conn: conn}
+func Websockets2KVMClient(conn *websocket.Conn) *kvm.Client {
+	return kvm.NewClient(&WebsocketsKVMClient{Conn: conn})
 }

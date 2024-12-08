@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"github.com/allape/gogger"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/crypto/des"
@@ -12,8 +13,8 @@ import (
 	"github.com/allape/openkvm/kvm/keymouse"
 	"github.com/allape/openkvm/kvm/video"
 	"io"
-	"slices"
 	"sync"
+	"time"
 )
 
 const (
@@ -37,6 +38,12 @@ const (
 )
 
 var l = gogger.New("kvm")
+
+var (
+	HandshakeFailed     = errors.New("handshake failed")
+	AuthFailed          = errors.New("auth failed")
+	UnsupportedAuthType = errors.New("unsupported auth type")
+)
 
 type PixelFormat struct {
 	BitsPerPixel uint8
@@ -74,127 +81,167 @@ type Server struct {
 	locker          sync.Locker
 }
 
-func (s *Server) CloseClient(client Client, message string) error {
-	if message != "" {
-		length := len(message)
-		bs := make([]byte, 4)
-		binary.BigEndian.PutUint32(bs, uint32(length))
-
-		// ignore error, close client anyway
-		_, _ = client.Write(append(bs, []byte(message)...))
+func (s *Server) handshake(client *Client) (ok bool, err error) {
+	_, err = client.Write([]byte(Version))
+	if err != nil {
+		return false, err
 	}
-	return client.Close()
+
+	resp := make([]byte, len(Version))
+	err = client.Read(resp)
+	if err != nil {
+		return false, err
+	}
+
+	if !bytes.Equal(resp, []byte(Version)) {
+		return false, client.Close("Unsupported protocol version")
+	}
+
+	if s.Options.Config.VNC.Password == "" {
+		_, err = client.Write([]byte{NumberOfSecurityTypes, byte(None)})
+	} else {
+		_, err = client.Write([]byte{NumberOfSecurityTypes, byte(VNCAuthentication)})
+	}
+
+	return true, nil
 }
 
-func (s *Server) HandleClient(client Client) error {
-	password := s.Options.Config.VNC.Password
-	noPassword := password == ""
+func (s *Server) challenge(client *Client) (err error) {
+	authType := make([]byte, 1)
 
-	handshake := false
-	challenged := noPassword
-	authed := false
-	init := false
-
-	var challenge []byte
-
-	// send full frame without diff process for first request
-	full := true
-
-	// this buffer is bigger enough for VNC
-	buf := make([]byte, 1024)
-
-	_, err := client.Write([]byte(Version))
+	err = client.Read(authType)
 	if err != nil {
 		return err
 	}
 
-	for {
-		n, err := client.Read(buf)
+	switch SecurityType(authType[0]) {
+	case None:
+		//err = client.Close("Unsupported auth type")
+		//if err != nil {
+		//	return err
+		//}
+		//return UnsupportedAuthType
+		return nil
+	case VNCAuthentication:
+		if s.Options.Config.VNC.Password == "" {
+			err = client.Close("Internal Server Error")
+			if err != nil {
+				return err
+			}
+			return UnsupportedAuthType
+		}
+
+		client.challenge = make([]byte, ChallengeSize)
+		n, err := rand.Read(client.challenge)
+		if err != nil {
+			return err
+		} else if n != ChallengeSize {
+			return io.ErrShortWrite
+		}
+
+		_, err = client.Write(client.challenge)
 		if err != nil {
 			return err
 		}
+	}
 
-		msg := buf[:n]
+	return nil
+}
 
-		if !handshake {
-			if slices.Equal(msg, []byte(Version)) {
-				handshake = true
-			} else {
-				return s.CloseClient(client, "Unsupported protocol version")
-			}
-			if noPassword {
-				_, err = client.Write([]byte{NumberOfSecurityTypes, byte(None)})
-			} else {
-				_, err = client.Write([]byte{NumberOfSecurityTypes, byte(VNCAuthentication)})
-			}
-			if err != nil {
-				return err
-			}
-			continue
+func (s *Server) auth(client *Client) (ok bool, err error) {
+	if client.challenge == nil {
+		_, err = client.Write(SecurityResultOK[:])
+		if err != nil {
+			return false, err
 		}
+		return true, nil
+	}
 
-		if !challenged {
-			challenge = make([]byte, ChallengeSize)
-			n, err := rand.Read(challenge)
-			if err != nil {
-				return err
-			} else if n != ChallengeSize {
-				return io.ErrShortWrite
-			}
+	d := des.New([]byte(s.Options.Config.VNC.Password))
+	expectedChallenged := make([]byte, ChallengeSize)
+	err = d.Encrypt(expectedChallenged, client.challenge)
+	if err != nil {
+		return false, err
+	}
 
-			_, err = client.Write(challenge)
-			if err != nil {
-				return err
-			}
-			challenged = true
-			continue
+	clientChallenged := make([]byte, ChallengeSize)
+	err = client.Read(clientChallenged)
+	if err != nil {
+		return false, err
+	}
+
+	if bytes.Compare(expectedChallenged, clientChallenged) != 0 {
+		_, err = client.Write(SecurityResultFail[:])
+		if err != nil {
+			return false, err
 		}
+		return false, client.Close("Password is incorrect")
+	}
 
-		if !authed {
-			if !noPassword {
-				d := des.New([]byte(password))
-				expectedChallenged := make([]byte, ChallengeSize)
-				err = d.Encrypt(expectedChallenged, challenge)
-				if err != nil {
-					return err
-				}
-				if bytes.Compare(expectedChallenged, msg[:ChallengeSize]) != 0 {
-					_, err = client.Write(SecurityResultFail[:])
-					if err != nil {
-						return err
-					}
-					return s.CloseClient(client, "Password is incorrect")
-				}
-			}
+	_, err = client.Write(SecurityResultOK[:])
+	if err != nil {
+		return false, err
+	}
 
-			_, err = client.Write(SecurityResultOK[:])
-			if err != nil {
-				return err
-			}
-			authed = true
-			continue
+	return true, nil
+}
+
+func (s *Server) init(client *Client) (err error) {
+	shareFlag := make([]byte, 1)
+	err = client.Read(shareFlag)
+	if err != nil {
+		return err
+	}
+
+	// TODO share flag
+
+	msg, err := s.GetServerInitBytes()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Write(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) HandleClient(client *Client) error {
+	ok, err := s.handshake(client)
+	if err != nil {
+		return err
+	} else if !ok {
+		return HandshakeFailed
+	}
+
+	err = s.challenge(client)
+	if err != nil {
+		return err
+	}
+
+	authed, err := s.auth(client)
+	if err != nil {
+		return err
+	} else if !authed {
+		return AuthFailed
+	}
+
+	err = s.init(client)
+	if err != nil {
+		return err
+	}
+
+	shouldSendFullFrame := false
+
+	msgType := make([]byte, 1)
+	for {
+		err = client.Read(msgType)
+		if err != nil {
+			return err
 		}
-
-		if !init {
-			if len(msg) == 1 {
-				msg, err := s.GetServerInitBytes()
-				if err != nil {
-					return err
-				}
-				_, err = client.Write(msg)
-				if err != nil {
-					return err
-				}
-			} else {
-				return s.CloseClient(client, "This kind of `ClientInit` is not supported")
-			}
-			init = true
-			continue
-		}
-
-		//l.Verbose().Println("msg:", hex.EncodeToString(msg))
-
-		switch msg[0] {
+		switch msgType[0] {
 		case 0: // SetPixelFormat
 		// 0000 0000 2018 0001 00ff 00ff 00ff 1008 0000 0000
 		case 2: // SetEncodings
@@ -202,22 +249,22 @@ func (s *Server) HandleClient(client Client) error {
 			s.locker.Lock()
 			err := func() error {
 				defer s.locker.Unlock()
-				rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, full)
+				rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, shouldSendFullFrame)
 				if err != nil {
 					l.Error().Println("GetNextImageRects error:", err)
 					//continue
 				}
-				msg, err = s.VideoCodec.FramebufferUpdate(rects)
+				frame, err := s.VideoCodec.FramebufferUpdate(rects)
 				if err != nil {
 					l.Error().Println("FramebufferUpdate error:", err)
 					//continue
 				}
 
 				if len(rects) > 0 {
-					full = false
+					shouldSendFullFrame = false
 				}
 
-				_, err = client.Write(msg)
+				_, err = client.Write(frame)
 				if err != nil {
 					return err
 				}
@@ -232,7 +279,13 @@ func (s *Server) HandleClient(client Client) error {
 				l.Warn().Println("Keyboard driver is not available")
 				continue
 			}
-			err := s.Keyboard.SendKeyEvent(msg)
+			keyEvent := make([]byte, 8)
+			err = client.Read(keyEvent)
+			if err != nil {
+				l.Error().Println("Read KeyEvent error:", err)
+				continue
+			}
+			err := s.Keyboard.SendKeyEvent(keyEvent)
 			if err != nil {
 				l.Error().Println("SendKeyEvent error:", err)
 			}
@@ -242,31 +295,35 @@ func (s *Server) HandleClient(client Client) error {
 				continue
 			}
 
-			// apply the scale
-			if len(msg) == 6 {
-				//               +--------------+--------------+--------------+
-				//              | No. of bytes | Type [Value] | Description  |
-				//              +--------------+--------------+--------------+
-				//              | 1            | U8 [5]       | message-type |
-				//              | 1            | U8           | button-mask  |
-				//              | 2            | U16          | x-position   |
-				//              | 2            | U16          | y-position   |
-				//              +--------------+--------------+--------------+
-				oldX := binary.BigEndian.Uint16(msg[2:4])
-				oldY := binary.BigEndian.Uint16(msg[4:6])
-				x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorXScale)
-				y := uint16(float64(oldY) * s.Options.Config.Mouse.CursorYScale)
-				//l.Verbose().Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", oldX, oldY, x, y)
-				copy(msg[2:6], []byte{byte(x >> 8), byte(x), byte(y >> 8), byte(y)})
+			pointerEvent := make([]byte, 6)
+			err = client.Read(pointerEvent)
+			if err != nil {
+				l.Error().Println("Read PointerEvent error:", err)
+				continue
 			}
 
-			err := s.Mouse.SendPointerEvent(msg)
+			//               +--------------+--------------+--------------+
+			//              | No. of bytes | Type [Value] | Description  |
+			//              +--------------+--------------+--------------+
+			//              | 1            | U8 [5]       | message-type |
+			//              | 1            | U8           | button-mask  |
+			//              | 2            | U16          | x-position   |
+			//              | 2            | U16          | y-position   |
+			//              +--------------+--------------+--------------+
+			oldX := binary.BigEndian.Uint16(pointerEvent[2:4])
+			oldY := binary.BigEndian.Uint16(pointerEvent[4:6])
+			x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorXScale)
+			y := uint16(float64(oldY) * s.Options.Config.Mouse.CursorYScale)
+			//l.Verbose().Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", oldX, oldY, x, y)
+			copy(pointerEvent[2:6], []byte{byte(x >> 8), byte(x), byte(y >> 8), byte(y)})
+
+			err := s.Mouse.SendPointerEvent(pointerEvent)
 			if err != nil {
 				l.Error().Println("SendPointerEvent error:", err)
 			}
 		case 6: // ClientCutText
 		default:
-			l.Warn().Println("Unsupported message type:", hex.EncodeToString(msg))
+			l.Warn().Println("Unsupported message type:", hex.EncodeToString(msgType))
 		}
 	}
 }
@@ -330,7 +387,7 @@ func (s *Server) GetServerInitBytes() ([]byte, error) {
 
 	s.serverInitBytes = msg
 
-	return msg, nil
+	return s.serverInitBytes, nil
 }
 
 func New(
@@ -354,6 +411,84 @@ func New(
 	return s, nil
 }
 
-type Client interface {
-	io.ReadWriteCloser
+type Client struct {
+	locker    sync.Locker
+	buffer    []byte
+	leftover  []byte
+	challenge []byte
+	Messager  io.ReadWriteCloser
+}
+
+func (c *Client) Write(msg []byte) (int, error) {
+	return c.Messager.Write(msg)
+}
+
+func (c *Client) Close(reason string) error {
+	if reason != "" {
+		length := len(reason)
+		bs := make([]byte, 4)
+		binary.BigEndian.PutUint32(bs, uint32(length))
+
+		// ignore error, close client anyway
+		_, _ = c.Messager.Write(append(bs, []byte(reason)...))
+	}
+	return c.Messager.Close()
+}
+
+func (c *Client) Read(dst []byte) error {
+	c.locker.Lock()
+	defer c.locker.Unlock()
+
+	length := len(dst)
+
+	if len(c.leftover) >= length {
+		copy(dst, c.leftover[:length])
+		c.leftover = c.leftover[length:]
+		return nil
+	}
+
+	errCh := make(chan error, 1)
+
+	buf := c.leftover
+	go func() {
+		for {
+			n, err := c.Messager.Read(c.buffer)
+			if err != nil {
+				go func() {
+					errCh <- err
+				}()
+				return
+			}
+			buf = append(buf, c.buffer[:n]...)
+			if len(buf) >= length {
+				c.leftover = buf[length:]
+				errCh <- nil
+				return
+			}
+		}
+	}()
+
+	select {
+	case <-time.After(30 * time.Second):
+		_ = c.Close("Read timeout")
+		return io.ErrNoProgress
+	case err := <-errCh:
+		close(errCh)
+
+		if err == nil {
+			copy(dst, buf)
+			return nil
+		}
+
+		_ = c.Close("")
+		return err
+	}
+}
+
+func NewClient(message io.ReadWriteCloser) *Client {
+	return &Client{
+		locker:   &sync.Mutex{},
+		buffer:   make([]byte, 1024),
+		Messager: message,
+	}
 }
