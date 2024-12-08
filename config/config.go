@@ -160,7 +160,6 @@ func GetConfig() (Config, error) {
 		l.Warn().Println("VNC password is empty, no authentication will be used")
 	} else if passwordLength != 8 {
 		l.Warn().Println("VNC password length is not 8, it will be truncated to 8 or filled with 0x0")
-		config.VNC.Password = config.VNC.Password[:8]
 	}
 
 	return config, nil
