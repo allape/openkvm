@@ -20,13 +20,13 @@ My dev walkthrough is in [WALKTHROUGH.md](./WALKTHROUGH.md).
 - [ ] Installation script
     - [ ] Register as a system service
     - [ ] Start on boot
-- [ ] VNC authentication
-    - DES encryption in Golang can NOT directly apply
-      to [`VNC Authentication`](https://datatracker.ietf.org/doc/html/rfc6143#section-7.1.2)
+- [x] VNC authentication
+    - [x] DES encryption in Golang can NOT directly apply to [`VNC Authentication`](https://datatracker.ietf.org/doc/html/rfc6143#section-7.1.2)
+    - [ ] AES encryption, see the keyword-search result of `_negotiateARDAuth` in noVNC
+    - [ ] Http Basic Auth in web page and API
 - [ ] More effective to calculate the difference between frames
     - Balance between the power of SBC and the network efficiency
     - Or achieve more support for noVNC, beyond [rfc6143](https://datatracker.ietf.org/doc/html/rfc6143)
-- [ ] ~~Device filter for USB devices: for multiple device controlling~~
 - [ ] OTG as keyboard and mouse, see
   Linux [USB Gadget API](https://www.kernel.org/doc/html/v4.16/driver-api/usb/gadget.html)
 - [x] Using a single command to get the frame for `Video`, like
