@@ -17,6 +17,8 @@ import (
 	"time"
 )
 
+var l = gogger.New("kvm")
+
 const (
 	Version               = "RFB 003.008\n"
 	ChallengeSize         = des.BlockSize * 2
@@ -37,12 +39,26 @@ const (
 	VNCAuthentication SecurityType = 2
 )
 
-var l = gogger.New("kvm")
+type ClientMessageType byte
+
+const (
+	SetPixelFormat           ClientMessageType = 0
+	SetEncodings             ClientMessageType = 2
+	FramebufferUpdateRequest ClientMessageType = 3
+	KeyEvent                 ClientMessageType = 4
+	PointerEvent             ClientMessageType = 5
+	ClientCutText            ClientMessageType = 6
+)
 
 var (
+	InternalServerError = errors.New("internal server error")
+
 	HandshakeFailed     = errors.New("handshake failed")
 	AuthFailed          = errors.New("auth failed")
 	UnsupportedAuthType = errors.New("unsupported auth type")
+
+	KeyboardNotAvailable = errors.New("keyboard driver is not available")
+	MouseNotAvailable    = errors.New("mouse driver is not available")
 )
 
 type PixelFormat struct {
@@ -107,14 +123,14 @@ func (s *Server) handshake(client *Client) (ok bool, err error) {
 }
 
 func (s *Server) challenge(client *Client) (err error) {
-	authType := make([]byte, 1)
+	st := make([]byte, 1)
 
-	err = client.Read(authType)
+	err = client.Read(st)
 	if err != nil {
 		return err
 	}
 
-	switch SecurityType(authType[0]) {
+	switch SecurityType(st[0]) {
 	case None:
 		//err = client.Close("Unsupported auth type")
 		//if err != nil {
@@ -124,63 +140,74 @@ func (s *Server) challenge(client *Client) (err error) {
 		return nil
 	case VNCAuthentication:
 		if s.Options.Config.VNC.Password == "" {
-			err = client.Close("Internal Server Error")
-			if err != nil {
-				return err
-			}
+			_ = client.Close(InternalServerError.Error())
 			return UnsupportedAuthType
 		}
 
 		client.challenge = make([]byte, ChallengeSize)
 		n, err := rand.Read(client.challenge)
 		if err != nil {
+			_ = client.Close(InternalServerError.Error())
 			return err
 		} else if n != ChallengeSize {
+			_ = client.Close(InternalServerError.Error())
 			return io.ErrShortWrite
 		}
 
 		_, err = client.Write(client.challenge)
 		if err != nil {
-			return err
+			return client.Close(InternalServerError.Error())
 		}
+	default:
+		return client.Close("Unsupported auth type")
 	}
+
+	client.respSecurityType = SecurityType(st[0])
 
 	return nil
 }
 
 func (s *Server) auth(client *Client) (ok bool, err error) {
-	if client.challenge == nil {
+	switch client.respSecurityType {
+	case None:
 		_, err = client.Write(SecurityResultOK[:])
 		if err != nil {
 			return false, err
 		}
 		return true, nil
-	}
+	case VNCAuthentication:
+		if client.challenge == nil {
+			return false, client.Close(InternalServerError.Error())
+		}
 
-	d := des.New([]byte(s.Options.Config.VNC.Password))
-	expectedChallenged := make([]byte, ChallengeSize)
-	err = d.Encrypt(expectedChallenged, client.challenge)
-	if err != nil {
-		return false, err
-	}
-
-	clientChallenged := make([]byte, ChallengeSize)
-	err = client.Read(clientChallenged)
-	if err != nil {
-		return false, err
-	}
-
-	if bytes.Compare(expectedChallenged, clientChallenged) != 0 {
-		_, err = client.Write(SecurityResultFail[:])
+		d := des.New([]byte(s.Options.Config.VNC.Password))
+		expectedChallenged := make([]byte, ChallengeSize)
+		err = d.Encrypt(expectedChallenged, client.challenge)
 		if err != nil {
+			_ = client.Close(InternalServerError.Error())
 			return false, err
 		}
-		return false, client.Close("Password is incorrect")
-	}
 
-	_, err = client.Write(SecurityResultOK[:])
-	if err != nil {
-		return false, err
+		clientChallenged := make([]byte, ChallengeSize)
+		err = client.Read(clientChallenged)
+		if err != nil {
+			_ = client.Close(InternalServerError.Error())
+			return false, err
+		}
+
+		if bytes.Compare(expectedChallenged, clientChallenged) != 0 {
+			_, _ = client.Write(SecurityResultFail[:])
+			return false, client.Close("Password is incorrect")
+		}
+
+		_, err = client.Write(SecurityResultOK[:])
+		if err != nil {
+			_ = client.Close(InternalServerError.Error())
+			return false, err
+		}
+	default:
+		_, _ = client.Write(SecurityResultFail[:])
+		return false, client.Close("Unsupported auth type")
 	}
 
 	return true, nil
@@ -201,6 +228,86 @@ func (s *Server) init(client *Client) (err error) {
 	}
 
 	_, err = client.Write(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) handleFramebufferUpdateRequest(client *Client) error {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+
+	rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, !client.fulfilled)
+	if err != nil {
+		return err
+	}
+	frame, err := s.VideoCodec.FramebufferUpdate(rects)
+	if err != nil {
+		return err
+	}
+
+	if len(rects) > 0 {
+		client.fulfilled = true
+	}
+
+	_, err = client.Write(frame)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) handleKeyEvent(client *Client) error {
+	if s.Keyboard == nil {
+		return KeyboardNotAvailable
+	}
+
+	keyEvent := make([]byte, 8)
+	err := client.Read(keyEvent)
+	if err != nil {
+		return err
+	}
+	err = s.Keyboard.SendKeyEvent(keyEvent)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (s *Server) handlePointerEvent(client *Client) error {
+	if s.Mouse == nil {
+		return MouseNotAvailable
+	}
+
+	pointerEvent := make([]byte, 6)
+	err := client.Read(pointerEvent)
+	if err != nil {
+		return err
+	}
+
+	//  +--------------+--------------+--------------+
+	// | No. of bytes | Type [Value] | Description  |
+	// +--------------+--------------+--------------+
+	// | 1            | U8 [5]       | message-type |
+	// | 1            | U8           | button-mask  |
+	// | 2            | U16          | x-position   |
+	// | 2            | U16          | y-position   |
+	// +--------------+--------------+--------------+
+
+	oldX := binary.BigEndian.Uint16(pointerEvent[2:4])
+	oldY := binary.BigEndian.Uint16(pointerEvent[4:6])
+	x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorXScale)
+	y := uint16(float64(oldY) * s.Options.Config.Mouse.CursorYScale)
+
+	copy(pointerEvent[2:6], []byte{byte(x >> 8), byte(x), byte(y >> 8), byte(y)})
+
+	l.Verbose().Printf("Rescale PointerEvent from (%d, %d) to (%d, %d)\n", oldX, oldY, x, y)
+
+	err = s.Mouse.SendPointerEvent(pointerEvent)
 	if err != nil {
 		return err
 	}
@@ -233,95 +340,39 @@ func (s *Server) HandleClient(client *Client) error {
 		return err
 	}
 
-	shouldSendFullFrame := false
-
 	msgType := make([]byte, 1)
 	for {
 		err = client.Read(msgType)
 		if err != nil {
 			return err
 		}
-		switch msgType[0] {
-		case 0: // SetPixelFormat
-		// 0000 0000 2018 0001 00ff 00ff 00ff 1008 0000 0000
-		case 2: // SetEncodings
-		case 3: // FramebufferUpdateRequest
-			s.locker.Lock()
-			err := func() error {
-				defer s.locker.Unlock()
-				rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, shouldSendFullFrame)
-				if err != nil {
-					l.Error().Println("GetNextImageRects error:", err)
-					//continue
-				}
-				frame, err := s.VideoCodec.FramebufferUpdate(rects)
-				if err != nil {
-					l.Error().Println("FramebufferUpdate error:", err)
-					//continue
-				}
 
-				if len(rects) > 0 {
-					shouldSendFullFrame = false
-				}
-
-				_, err = client.Write(frame)
-				if err != nil {
-					return err
-				}
-
-				return nil
-			}()
+		switch ClientMessageType(msgType[0]) {
+		case SetPixelFormat:
+			// 0000 0000 2018 0001 00ff 00ff 00ff 1008 0000 0000
+			continue
+		case SetEncodings:
+			continue
+		case FramebufferUpdateRequest:
+			err = s.handleFramebufferUpdateRequest(client)
 			if err != nil {
-				return err
-			}
-		case 4: // KeyEvent
-			if s.Keyboard == nil {
-				l.Warn().Println("Keyboard driver is not available")
+				l.Warn().Println("FramebufferUpdateRequest error:", err)
 				continue
 			}
-			keyEvent := make([]byte, 8)
-			err = client.Read(keyEvent)
+		case KeyEvent:
+			err = s.handleKeyEvent(client)
 			if err != nil {
-				l.Error().Println("Read KeyEvent error:", err)
+				l.Warn().Println("KeyEvent error:", err)
 				continue
 			}
-			err := s.Keyboard.SendKeyEvent(keyEvent)
+		case PointerEvent:
+			err = s.handlePointerEvent(client)
 			if err != nil {
-				l.Error().Println("SendKeyEvent error:", err)
-			}
-		case 5: // PointerEvent
-			if s.Mouse == nil {
-				l.Warn().Println("Mouse driver is not available")
+				l.Warn().Println("PointerEvent error:", err)
 				continue
 			}
-
-			pointerEvent := make([]byte, 6)
-			err = client.Read(pointerEvent)
-			if err != nil {
-				l.Error().Println("Read PointerEvent error:", err)
-				continue
-			}
-
-			//               +--------------+--------------+--------------+
-			//              | No. of bytes | Type [Value] | Description  |
-			//              +--------------+--------------+--------------+
-			//              | 1            | U8 [5]       | message-type |
-			//              | 1            | U8           | button-mask  |
-			//              | 2            | U16          | x-position   |
-			//              | 2            | U16          | y-position   |
-			//              +--------------+--------------+--------------+
-			oldX := binary.BigEndian.Uint16(pointerEvent[2:4])
-			oldY := binary.BigEndian.Uint16(pointerEvent[4:6])
-			x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorXScale)
-			y := uint16(float64(oldY) * s.Options.Config.Mouse.CursorYScale)
-			//l.Verbose().Printf("%s Rescale PointerEvent from (%d, %d) to (%d, %d)\n", oldX, oldY, x, y)
-			copy(pointerEvent[2:6], []byte{byte(x >> 8), byte(x), byte(y >> 8), byte(y)})
-
-			err := s.Mouse.SendPointerEvent(pointerEvent)
-			if err != nil {
-				l.Error().Println("SendPointerEvent error:", err)
-			}
-		case 6: // ClientCutText
+		case ClientCutText:
+			// TODO handle clipboard
 		default:
 			l.Warn().Println("Unsupported message type:", hex.EncodeToString(msgType))
 		}
@@ -412,11 +463,15 @@ func New(
 }
 
 type Client struct {
-	locker    sync.Locker
-	buffer    []byte
-	leftover  []byte
-	challenge []byte
-	Messager  io.ReadWriteCloser
+	locker   sync.Locker
+	buffer   []byte
+	leftover []byte
+
+	respSecurityType SecurityType
+	challenge        []byte
+	fulfilled        bool
+
+	Messager io.ReadWriteCloser
 }
 
 func (c *Client) Write(msg []byte) (int, error) {
