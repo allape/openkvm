@@ -22,8 +22,7 @@ My dev walkthrough is in [WALKTHROUGH.md](./WALKTHROUGH.md).
     - [ ] Start on boot
 - [x] VNC authentication
     - [x] DES encryption in Golang can NOT directly apply to [`VNC Authentication`](https://datatracker.ietf.org/doc/html/rfc6143#section-7.1.2)
-    - [ ] AES encryption, see the keyword-search result of `_negotiateARDAuth` in noVNC
-    - [ ] Http Basic Auth in web page and API
+    - [x] Http Basic Auth in web page and API
 - [ ] More effective to calculate the difference between frames
     - Balance between the power of SBC and the network efficiency
     - Or achieve more support for noVNC, beyond [rfc6143](https://datatracker.ietf.org/doc/html/rfc6143)

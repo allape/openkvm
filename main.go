@@ -143,9 +143,13 @@ func main() {
 		}
 	}
 
+	basicAuth := gin.BasicAuth(gin.Accounts{
+		conf.VNC.Username: conf.VNC.Password,
+	})
+
 	engine.GET(conf.Websocket.Path, handleWebsocket)
 
-	apiGroup := engine.Group("/api")
+	apiGroup := engine.Group("/api", basicAuth)
 
 	apiGroup.GET("/led", func(context *gin.Context) {
 		state := context.Query("state")
@@ -215,7 +219,8 @@ func main() {
 			}
 		}
 
-		engine.GET("/vnc/*filename", func(context *gin.Context) {
+		vncGroup := engine.Group("/vnc", basicAuth)
+		vncGroup.GET("/*filename", func(context *gin.Context) {
 			filename := context.Param("filename")
 
 			switch {
