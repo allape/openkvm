@@ -43,6 +43,7 @@ type ClientMessageType byte
 
 const (
 	SetPixelFormat           ClientMessageType = 0
+	Placeholder              ClientMessageType = 1
 	SetEncodings             ClientMessageType = 2
 	FramebufferUpdateRequest ClientMessageType = 3
 	KeyEvent                 ClientMessageType = 4
@@ -294,6 +295,8 @@ func (s *Server) handleFramebufferUpdateRequest(client *Client) error {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 
+	_ = client.Read(client.framebufferUpdateRequest)
+
 	rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, !client.fulfilled)
 	if err != nil {
 		return err
@@ -315,17 +318,36 @@ func (s *Server) handleFramebufferUpdateRequest(client *Client) error {
 	return nil
 }
 
+func (s *Server) handleEncoding(client *Client) error {
+	err := client.Read(client.encodings)
+	if err != nil {
+		return err
+	}
+
+	number := binary.BigEndian.Uint16(client.encodings[1:3])
+
+	encodings := make([]byte, number*4)
+	err = client.Read(encodings)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Server) handleKeyEvent(client *Client) error {
+	err := client.Read(client.keyEvent)
+	if err != nil {
+		return err
+	}
+
 	if s.Keyboard == nil {
 		return KeyboardNotAvailable
 	}
 
-	keyEvent := make([]byte, 8)
-	err := client.Read(keyEvent)
-	if err != nil {
-		return err
-	}
-	err = s.Keyboard.SendKeyEvent(keyEvent)
+	copy(client.fullKeyEvent[1:], client.keyEvent)
+
+	err = s.Keyboard.SendKeyEvent(client.fullKeyEvent)
 	if err != nil {
 		return err
 	}
@@ -334,15 +356,16 @@ func (s *Server) handleKeyEvent(client *Client) error {
 }
 
 func (s *Server) handlePointerEvent(client *Client) error {
+	err := client.Read(client.pointerEvent)
+	if err != nil {
+		return err
+	}
+
 	if s.Mouse == nil {
 		return MouseNotAvailable
 	}
 
-	pointerEvent := make([]byte, 6)
-	err := client.Read(pointerEvent)
-	if err != nil {
-		return err
-	}
+	copy(client.fullPointerEvent[1:], client.pointerEvent)
 
 	//  +--------------+--------------+--------------+
 	// | No. of bytes | Type [Value] | Description  |
@@ -353,6 +376,7 @@ func (s *Server) handlePointerEvent(client *Client) error {
 	// | 2            | U16          | y-position   |
 	// +--------------+--------------+--------------+
 
+	pointerEvent := client.fullPointerEvent
 	oldX := binary.BigEndian.Uint16(pointerEvent[2:4])
 	oldY := binary.BigEndian.Uint16(pointerEvent[4:6])
 	x := uint16(float64(oldX) * s.Options.Config.Mouse.CursorXScale)
@@ -366,6 +390,27 @@ func (s *Server) handlePointerEvent(client *Client) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (s *Server) handleClientCut(client *Client) error {
+	err := client.Read(client.clientCut)
+	if err != nil {
+		return err
+	}
+
+	length := binary.BigEndian.Uint32(client.clientCut[3:])
+
+	text := make([]byte, length)
+	err = client.Read(text)
+	if err != nil {
+		return err
+	}
+
+	l.Info().Println("ClientCutText:", string(text))
+
+	// TODO handle clipboard
 
 	return nil
 }
@@ -405,8 +450,16 @@ func (s *Server) HandleClient(client *Client) error {
 		switch ClientMessageType(msgType[0]) {
 		case SetPixelFormat:
 			// 0000 0000 2018 0001 00ff 00ff 00ff 1008 0000 0000
+			_ = client.Read(client.pixelFormat)
+			continue
+		case Placeholder:
 			continue
 		case SetEncodings:
+			err = s.handleEncoding(client)
+			if err != nil {
+				l.Warn().Println("SetEncodings error:", err)
+				continue
+			}
 			continue
 		case FramebufferUpdateRequest:
 			err = s.handleFramebufferUpdateRequest(client)
@@ -427,7 +480,11 @@ func (s *Server) HandleClient(client *Client) error {
 				continue
 			}
 		case ClientCutText:
-			// TODO handle clipboard
+			err = s.handleClientCut(client)
+			if err != nil {
+				l.Warn().Println("ClientCutText error:", err)
+				continue
+			}
 		default:
 			l.Warn().Println("Unsupported message type:", hex.EncodeToString(msgType))
 		}
@@ -526,6 +583,16 @@ type Client struct {
 	challenge        []byte
 	fulfilled        bool
 
+	framebufferUpdateRequest []byte
+	pixelFormat              []byte
+	encodings                []byte
+	keyEvent                 []byte
+	pointerEvent             []byte
+	clientCut                []byte
+
+	fullKeyEvent     []byte
+	fullPointerEvent []byte
+
 	Messager io.ReadWriteCloser
 }
 
@@ -597,8 +664,68 @@ func (c *Client) Read(dst []byte) error {
 
 func NewClient(message io.ReadWriteCloser) *Client {
 	return &Client{
-		locker:   &sync.Mutex{},
-		buffer:   make([]byte, 1024),
+		locker: &sync.Mutex{},
+		buffer: make([]byte, 1024),
+
+		//               +--------------+--------------+--------------+
+		//              | No. of bytes | Type [Value] | Description  |
+		//              +--------------+--------------+--------------+
+		//              | 1            | U8 [0]       | message-type |
+		//              | 3            |              | padding      |
+		//              | 16           | PIXEL_FORMAT | pixel-format |
+		//              +--------------+--------------+--------------+
+		pixelFormat: make([]byte, 19),
+		//            +--------------+--------------+---------------------+
+		//           | No. of bytes | Type [Value] | Description         |
+		//           +--------------+--------------+---------------------+
+		//           | 1            | U8 [2]       | message-type        |
+		//           | 1            |              | padding             |
+		//           | 2            | U16          | number-of-encodings |
+		//           | 4            | S32          | encoding-type       |
+		//           +--------------+--------------+---------------------+
+		encodings: make([]byte, 3),
+		//               +--------------+--------------+--------------+
+		//              | No. of bytes | Type [Value] | Description  |
+		//              +--------------+--------------+--------------+
+		//              | 1            | U8 [3]       | message-type |
+		//              | 1            | U8           | incremental  |
+		//              | 2            | U16          | x-position   |
+		//              | 2            | U16          | y-position   |
+		//              | 2            | U16          | width        |
+		//              | 2            | U16          | height       |
+		//              +--------------+--------------+--------------+
+		framebufferUpdateRequest: make([]byte, 9),
+		//               +--------------+--------------+--------------+
+		//              | No. of bytes | Type [Value] | Description  |
+		//              +--------------+--------------+--------------+
+		//              | 1            | U8 [4]       | message-type |
+		//              | 1            | U8           | down-flag    |
+		//              | 2            |              | padding      |
+		//              | 4            | U32          | key          |
+		//              +--------------+--------------+--------------+
+		keyEvent: make([]byte, 7),
+		//               +--------------+--------------+--------------+
+		//              | No. of bytes | Type [Value] | Description  |
+		//              +--------------+--------------+--------------+
+		//              | 1            | U8 [5]       | message-type |
+		//              | 1            | U8           | button-mask  |
+		//              | 2            | U16          | x-position   |
+		//              | 2            | U16          | y-position   |
+		//              +--------------+--------------+--------------+
+		pointerEvent: make([]byte, 5),
+		//               +--------------+--------------+--------------+
+		//              | No. of bytes | Type [Value] | Description  |
+		//              +--------------+--------------+--------------+
+		//              | 1            | U8 [6]       | message-type |
+		//              | 3            |              | padding      |
+		//              | 4            | U32          | length       |
+		//              | length       | U8 array     | text         |
+		//              +--------------+--------------+--------------+
+		clientCut: make([]byte, 7),
+
+		fullKeyEvent:     append([]byte{byte(KeyEvent)}, bytes.Repeat([]byte{0}, 7)...),
+		fullPointerEvent: append([]byte{byte(PointerEvent)}, bytes.Repeat([]byte{0}, 5)...),
+
 		Messager: message,
 	}
 }
