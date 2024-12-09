@@ -5,6 +5,7 @@ cors = false
 
 [vnc]
 path = "../noVNC"
+username = "allape"
 password = "passwd12"
 
 [keyboard]

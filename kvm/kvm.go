@@ -20,9 +20,8 @@ import (
 var l = gogger.New("kvm")
 
 const (
-	Version               = "RFB 003.008\n"
-	ChallengeSize         = des.BlockSize * 2
-	NumberOfSecurityTypes = 1
+	Version       = "RFB 003.008\n"
+	ChallengeSize = des.BlockSize * 2
 )
 
 type SecurityResult [4]byte
@@ -37,6 +36,7 @@ type SecurityType byte
 const (
 	None              SecurityType = 1
 	VNCAuthentication SecurityType = 2
+	Plain             SecurityType = 0 // 256
 )
 
 type ClientMessageType byte
@@ -114,9 +114,29 @@ func (s *Server) handshake(client *Client) (ok bool, err error) {
 	}
 
 	if s.Options.Config.VNC.Password == "" {
-		_, err = client.Write([]byte{NumberOfSecurityTypes, byte(None)})
-	} else {
-		_, err = client.Write([]byte{NumberOfSecurityTypes, byte(VNCAuthentication)})
+		for i := 0; i < 9; i++ {
+			l.Warn().Println("No password set, use None auth type")
+		}
+		_, err = client.Write([]byte{1, byte(None)})
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	if s.Options.Config.VNC.Username != "" {
+		l.Info().Printf("Use Tight security type with username: %s; And use std VNC as fallback auth", s.Options.Config.VNC.Username)
+		_, err = client.Write([]byte{2, byte(Plain), byte(VNCAuthentication)})
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	l.Info().Println("Use std VNC auth type")
+	_, err = client.Write([]byte{1, byte(VNCAuthentication)})
+	if err != nil {
+		return false, err
 	}
 
 	return true, nil
@@ -158,6 +178,8 @@ func (s *Server) challenge(client *Client) (err error) {
 		if err != nil {
 			return client.Close(InternalServerError.Error())
 		}
+	case Plain:
+		return nil
 	default:
 		return client.Close("Unsupported auth type")
 	}
@@ -205,12 +227,45 @@ func (s *Server) auth(client *Client) (ok bool, err error) {
 			_ = client.Close(InternalServerError.Error())
 			return false, err
 		}
+
+		return true, nil
+	case Plain:
+		lengthOfUsernameAndPassword := make([]byte, 8)
+		err = client.Read(lengthOfUsernameAndPassword)
+		if err != nil {
+			_ = client.Close(InternalServerError.Error())
+			return false, err
+		}
+
+		lengthOfUsername := binary.BigEndian.Uint32(lengthOfUsernameAndPassword[:4])
+		lengthOfPassword := binary.BigEndian.Uint32(lengthOfUsernameAndPassword[4:])
+
+		usernameAndPassword := make([]byte, lengthOfUsername+lengthOfPassword)
+		err = client.Read(usernameAndPassword)
+		if err != nil {
+			_ = client.Close(InternalServerError.Error())
+			return false, err
+		}
+
+		username := usernameAndPassword[:lengthOfUsername]
+		password := usernameAndPassword[lengthOfUsername:]
+
+		if string(username) != s.Options.Config.VNC.Username || string(password) != s.Options.Config.VNC.Password {
+			_, _ = client.Write(SecurityResultFail[:])
+			return false, client.Close("Username or password is incorrect")
+		}
+
+		_, err = client.Write(SecurityResultOK[:])
+		if err != nil {
+			_ = client.Close(InternalServerError.Error())
+			return false, err
+		}
+
+		return true, nil
 	default:
 		_, _ = client.Write(SecurityResultFail[:])
 		return false, client.Close("Unsupported auth type")
 	}
-
-	return true, nil
 }
 
 func (s *Server) init(client *Client) (err error) {

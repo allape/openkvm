@@ -18,7 +18,7 @@ cors = false
 [vnc]
 # Path to a static served folder, noVNC is recommended.
 #path = "../noVNC"
-username = "openkvm~" # not supported yet
+username = "openkvm"
 password = "passwd12"
 
 [keyboard]

@@ -88,7 +88,7 @@ type Button struct {
 
 type VNC struct {
 	Path     string `toml:"path"`
-	Username string `toml:"username"` // not supported yet
+	Username string `toml:"username"`
 	Password string `toml:"password"`
 }
 
@@ -154,13 +154,6 @@ func GetConfig() (Config, error) {
 	}
 
 	l.Debug().Println("use config:", config)
-
-	passwordLength := len(config.VNC.Password)
-	if passwordLength == 0 {
-		l.Warn().Println("VNC password is empty, no authentication will be used")
-	} else if passwordLength != 8 {
-		l.Warn().Println("VNC password length is not 8, it will be truncated to 8 or filled with 0x0")
-	}
 
 	return config, nil
 }
