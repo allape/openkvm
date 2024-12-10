@@ -150,7 +150,6 @@ func main() {
 	engine.GET(conf.Websocket.Path, handleWebsocket)
 
 	apiGroup := engine.Group("/api", basicAuth)
-
 	apiGroup.GET("/led", func(context *gin.Context) {
 		state := context.Query("state")
 		if state == "on" {
@@ -161,7 +160,6 @@ func main() {
 
 		context.String(http.StatusOK, "ok")
 	})
-
 	apiGroup.GET("/button", func(context *gin.Context) {
 		if b == nil {
 			context.String(http.StatusNotImplemented, "not implemented")
@@ -204,34 +202,31 @@ func main() {
 		context.String(http.StatusOK, "ok")
 	})
 
+	uiGroup := engine.Group("/ui", basicAuth)
+	uiGroup.GET("/button.html", func(context *gin.Context) {
+		if stat, err := os.Stat(ButtonHTMLPath); err == nil && !stat.IsDir() {
+			context.File(ButtonHTMLPath)
+		} else {
+			context.Data(http.StatusOK, "text/html; charset=utf-8", []byte(ButtonHTML))
+		}
+	})
+
 	if conf.VNC.Path != "" {
-		handleVNCIndex := func(context *gin.Context) {
-			context.Redirect(http.StatusMovedPermanently, "/vnc/vnc.html")
-		}
-		engine.GET("/", handleVNCIndex)
-		engine.GET("/vnc.html", handleVNCIndex)
-
-		handleButtonHTML := func(context *gin.Context) {
-			if stat, err := os.Stat(ButtonHTMLPath); err == nil && !stat.IsDir() {
-				context.File(ButtonHTMLPath)
-			} else {
-				context.Data(http.StatusOK, "text/html; charset=utf-8", []byte(ButtonHTML))
+		engine.NoRoute(func(context *gin.Context) {
+			uri := context.Request.RequestURI
+			if uri == "/" {
+				uri = "/vnc.html"
 			}
-		}
 
-		vncGroup := engine.Group("/vnc", basicAuth)
-		vncGroup.GET("/*filename", func(context *gin.Context) {
-			filename := context.Param("filename")
+			filename := path.Join(conf.VNC.Path, uri)
 
-			switch {
-			case filename == "/button.html":
-				handleButtonHTML(context)
+			// do NOT serve folder
+			if stat, err := os.Stat(filename); err != nil || stat.IsDir() {
+				context.String(http.StatusNotFound, "not found")
 				return
-			case filename == conf.Websocket.Path:
-				handleWebsocket(context)
-			default:
-				context.File(path.Join(conf.VNC.Path, filename))
 			}
+
+			context.File(filename)
 		})
 	}
 
