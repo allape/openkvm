@@ -143,9 +143,14 @@ func main() {
 		}
 	}
 
-	basicAuth := gin.BasicAuth(gin.Accounts{
-		conf.VNC.Username: conf.VNC.Password,
-	})
+	var basicAuth gin.HandlerFunc = func(context *gin.Context) {
+		// no auth
+	}
+	if conf.VNC.Username != "" && conf.VNC.Password != "" {
+		basicAuth = gin.BasicAuth(gin.Accounts{
+			conf.VNC.Username: conf.VNC.Password,
+		})
+	}
 
 	engine.GET(conf.Websocket.Path, handleWebsocket)
 
