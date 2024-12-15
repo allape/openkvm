@@ -27,7 +27,8 @@ func ButtonFromConfig(conf config.Config, keyboard keymouse.Driver, mouse keymou
 			km = mouse
 		default:
 			l.Info().Println("button driver is serial port:", conf.Button.Src)
-			baud, err := conf.Button.Ext.GetInt("baud", 9600)
+			ext := config.SerialPortExt(conf.Button.Ext)
+			baud, err := ext.GetBaud(DefaultBaud)
 			if err != nil {
 				return nil, err
 			}
@@ -41,7 +42,8 @@ func ButtonFromConfig(conf config.Config, keyboard keymouse.Driver, mouse keymou
 	case config.ButtonShell:
 		l.Info().Println("button driver is shell:", conf.Button.Ext)
 		bd = &shell.Button{
-			Config: conf.Button,
+			Config:    conf.Button,
+			Commander: config.ButtonShellExt(conf.Button.Ext),
 		}
 	default:
 		return nil, fmt.Errorf("unknown button driver: %s", conf.Button.Type)

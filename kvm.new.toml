@@ -25,20 +25,57 @@ password = "passwd12"
 # none, serialport
 type = "serialport"
 src = "/dev/ttyACM0"
-ext = "baud:\"115200\""
+ext = { baud = "460800" }
 
 [video]
-# A command run before video capture.
-#prelude_command = "[\"usbreset\", \"Hagibis\"]"
-# usb(deprecated), shell
-type = "shell" # only mpeg format is supported
+# Commands run before video capture. All of them must return 0, otherwise an error will be emitted.
+#setup_commands = [
+#    # test v4l2-ctl
+#    [
+#        "v4l2-ctl",
+#        "--all",
+#    ],
+#    # test ffmpeg
+#    [
+#        "ffmpeg",
+#        "-version",
+#    ],
+#    # reset usb to prevent device stall
+#    [
+#        "usbreset",
+#        "Hagibis",
+#    ],
+#]
+# usb(deprecated & removed), shell(only mpeg format is supported)
+type = "shell"
 
 # usb: either the index of video device or the path to video device.
-#src = "0"
+#src = ["0"]
 # shell: command to get frame
-src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to=-\", \"--set-fmt-video=width=1280,height=720,pixelformat=MJPG\"]"
+src = [
+    "v4l2-ctl",
+    "--device=/dev/video0",
+    "--stream-mmap",
+    "--set-fmt-video=width=1280,height=720,pixelformat=MJPG",
+    "--stream-to=-",
+]
 # capture FaceTime camera on macOS
-#src = "[\"ffmpeg\", \"-f\", \"avfoundation\", \"-framerate\", \"30\", \"-pixel_format\", \"uyvy422\", \"-video_size\", \"1280x720\", \"-i\", \"default\", \"-f\", \"mjpeg\", \"-\"]"
+#src = [
+#    "ffmpeg",
+#    "-f",
+#    "avfoundation",
+#    "-framerate",
+#    "30",
+#    "-pixel_format",
+#    "uyvy422",
+#    "-video_size",
+#    "1280x720",
+#    "-i",
+#    "default",
+#    "-f",
+#    "mjpeg",
+#    "-",
+#]
 
 width = 1280
 height = 720
@@ -53,7 +90,7 @@ ext = ""
 # none, serialport
 type = "serialport"
 src = "/dev/ttyACM0"
-ext = "baud:\"115200\""
+ext = { baud = "460800" }
 
 # A factor to adjust the cursor move distance when the video is scaled.
 # Suggested scale:
@@ -70,10 +107,10 @@ cursor_y_scale = 45.5754925372
 # none, serialport, shell
 #type = "serialport"
 #src = "/dev/ttyACM0"
-#ext = "baud:\"115200\""
+#ext = { baud = "460800" }
 type = "shell"
 # Demo for OrangePI https://github.com/orangepi-xunlong/wiringOP
-ext = "open:\"[\\\"gpio\\\", \\\"mode\\\", \\\"$PIN\\\", \\\"out\\\"]\" press:\"[\\\"gpio\\\", \\\"write\\\", \\\"$PIN\\\", \\\"1\\\"]\" release:\"[\\\"gpio\\\", \\\"write\\\", \\\"$PIN\\\", \\\"0\\\"]\""
+ext = { open = ["gpio", "mode", "$PIN", "out"], press = ["gpio", "write", "$PIN", "1"], release = ["gpio", "write", "$PIN", "0"] }
 # GPIO Pin for power button
 pwr_btn = "0"
 # GPIO Pin for reset button

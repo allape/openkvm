@@ -23,10 +23,10 @@ type Driver interface {
 }
 
 type Options struct {
-	Width          int
-	Height         int
-	FrameRate      float64
-	Quality        int
-	SliceCount     config.SliceCount
-	PreludeCommand config.ShellCommand
+	Width         int
+	Height        int
+	FrameRate     float64
+	Quality       int
+	SliceCount    config.SliceCount
+	SetupCommands []config.SetupCommand
 }

@@ -29,7 +29,7 @@ const Name = "/dev/ttyACM0"
 
 func main() {
 	mode := &serial.Mode{
-		BaudRate: 9600,
+		BaudRate: 460800,
 	}
 	port, err := serial.Open(Name, mode)
 	if err != nil {

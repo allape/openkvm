@@ -1,5 +1,11 @@
 # Walk Through of my development
 
+### Why TOML?
+
+- JSON is too restricted
+- YAML is driven by indentation
+- TOML is simple and easy to read
+
 ### Problem with HDMI Recorder
 
 - ~~The common seen `HDMI Recorder` is a `USB 3.0` device.  

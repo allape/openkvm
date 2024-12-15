@@ -28,7 +28,7 @@
 //     VALUE: 0x01 for HIGH
 #define ButtonEvent 0xff  // power button, rest button, etc
 
-// screen /dev/cu.wchusbserialxxx 115200 \n
+// screen /dev/cu.wchusbserialxxx 460800 \n
 // open-kvm\n
 
 // test the builtin LED
@@ -378,7 +378,7 @@ USBHIDAbsoluteMouse Mouse;
 SerialReader *serialport = new SerialReader(Keyboard, Mouse);
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(460800);
 
   Serial.println("[000%] starting...");
 

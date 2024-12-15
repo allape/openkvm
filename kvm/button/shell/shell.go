@@ -2,38 +2,30 @@ package shell
 
 import (
 	"errors"
+	"github.com/allape/gogger"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/button"
+	"os/exec"
 )
+
+var l = gogger.New("button.shell")
 
 type Button struct {
 	button.Driver
-	Config config.Button
-
-	openCommand    config.ShellCommand
-	pressCommand   config.ShellCommand
-	releaseCommand config.ShellCommand
+	Config    config.Button
+	Commander config.ButtonShellExt
 }
 
-func (b *Button) Exec(command config.ShellCommand, btn string) error {
-	if btn == "" {
-		return errors.New("button not found")
-	}
-
-	cmd, err := command.ToCommand()
-	if err != nil {
-		return err
-	}
-
-	for i, segment := range cmd.Args {
-		if segment == "$PIN" {
-			cmd.Args[i] = btn
-		}
-	}
-
+func (b *Button) Exec(cmd *exec.Cmd) error {
 	bs, err := cmd.CombinedOutput()
+
+	output := string(bs)
+
+	l.Verbose().Println("executing command:", cmd.String())
+	l.Verbose().Println("output:", output)
+
 	if err != nil {
-		return errors.New(string(bs))
+		return errors.New(output)
 	}
 
 	return nil
@@ -52,25 +44,6 @@ func (b *Button) GetButton(t button.Type) string {
 }
 
 func (b *Button) Open() error {
-	var err error
-
-	openCommand := b.Config.Ext.Get("open")
-	if openCommand == "" {
-		return errors.New("open command not found")
-	}
-	pressCommand := b.Config.Ext.Get("press")
-	if pressCommand == "" {
-		return errors.New("press command not found")
-	}
-	releaseCommand := b.Config.Ext.Get("release")
-	if releaseCommand == "" {
-		return errors.New("release command not found")
-	}
-
-	b.openCommand = config.NewShellCommand(openCommand)
-	b.pressCommand = config.NewShellCommand(pressCommand)
-	b.releaseCommand = config.NewShellCommand(releaseCommand)
-
 	buttons := map[string]string{
 		"power": b.Config.PowerButton,
 		"reset": b.Config.ResetButton,
@@ -84,7 +57,12 @@ func (b *Button) Open() error {
 			}
 			continue
 		}
-		err = b.Exec(b.openCommand, btn)
+
+		cmd, err := b.Commander.GetOpenCommand(btn)
+		if err != nil {
+			return err
+		}
+		err = b.Exec(cmd)
 		if err != nil {
 			return err
 		}
@@ -98,7 +76,11 @@ func (b *Button) Close() error {
 }
 
 func (b *Button) Press(t button.Type) error {
-	err := b.Exec(b.pressCommand, b.GetButton(t))
+	cmd, err := b.Commander.GetPressCommand(b.GetButton(t))
+	if err != nil {
+		return err
+	}
+	err = b.Exec(cmd)
 	if err != nil {
 		return err
 	}
@@ -106,7 +88,11 @@ func (b *Button) Press(t button.Type) error {
 }
 
 func (b *Button) Release(t button.Type) error {
-	err := b.Exec(b.releaseCommand, b.GetButton(t))
+	cmd, err := b.Commander.GetReleaseCommand(b.GetButton(t))
+	if err != nil {
+		return err
+	}
+	err = b.Exec(cmd)
 	if err != nil {
 		return err
 	}

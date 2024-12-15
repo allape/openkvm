@@ -21,8 +21,8 @@ var l = gogger.New("kvm.video.shell")
 type Driver struct {
 	video.Driver
 
-	cmd        config.ShellCommand
-	preludeCmd config.ShellCommand
+	src           config.VideoShellSrc
+	setupCommands []config.SetupCommand
 
 	process *os.Process
 	locker  sync.Locker
@@ -53,12 +53,7 @@ func (d *Driver) Open() error {
 		return nil
 	}
 
-	prelude, err := d.preludeCmd.ToCommand()
-	if err != nil {
-		return err
-	}
-
-	cmd, err := d.cmd.ToCommand()
+	cmd, err := d.src.ToCommand()
 	if err != nil {
 		return err
 	} else if cmd == nil {
@@ -150,13 +145,18 @@ func (d *Driver) Open() error {
 		}
 	}()
 
-	if prelude != nil {
-		l.Verbose().Println(prelude.Path, prelude.Args)
-		output, err := prelude.CombinedOutput()
+	for _, command := range d.setupCommands {
+		setup, err := command.ToCommand()
 		if err != nil {
-			return errors.New(string(output))
+			return err
 		}
-		l.Verbose().Print("prelude output:", string(output))
+		l.Verbose().Println(setup.Path, setup.Args)
+		output, err := setup.CombinedOutput()
+		o := string(output)
+		l.Verbose().Print("prelude output:", o)
+		if err != nil {
+			return errors.New(o)
+		}
 	}
 
 	l.Verbose().Println(cmd.Path, cmd.Args)
@@ -278,7 +278,7 @@ type Options struct {
 	video.Options
 }
 
-func NewDriver(src config.ShellCommand, options *Options) video.Driver {
+func NewDriver(src config.VideoShellSrc, options *Options) video.Driver {
 	if options == nil {
 		options = &Options{}
 	}
@@ -294,8 +294,8 @@ func NewDriver(src config.ShellCommand, options *Options) video.Driver {
 	}
 
 	return &Driver{
-		cmd:        src,
-		preludeCmd: options.PreludeCommand,
+		src:           src,
+		setupCommands: options.SetupCommands,
 
 		locker:         &sync.Mutex{},
 		bufferLocker:   &sync.Mutex{},

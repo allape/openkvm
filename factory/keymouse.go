@@ -6,13 +6,15 @@ import (
 	"github.com/allape/openkvm/kvm/keymouse/serialport"
 )
 
+const DefaultBaud = 9600
+
 func KeyboardFromConfig(conf config.Config) (kd keymouse.Driver, err error) {
 	switch conf.Keyboard.Type {
 	case config.KeyboardNone:
 		l.Warn().Println("keyboard driver is none, no keyboard output")
 	case config.KeyboardSerialPort:
 		l.Info().Println("keyboard driver is serial port:", conf.Keyboard.Src)
-		baud, err := conf.Keyboard.Ext.GetInt("baud", 9600)
+		baud, err := conf.Keyboard.Ext.GetBaud(DefaultBaud)
 		if err != nil {
 			return nil, err
 		}
@@ -32,14 +34,13 @@ func KeyboardFromConfig(conf config.Config) (kd keymouse.Driver, err error) {
 
 func MouseFromConfigOrUseKeyboard(kd keymouse.Driver, conf config.Config) (md keymouse.Driver, err error) {
 	if string(conf.Mouse.Type) != string(conf.Keyboard.Type) ||
-		conf.Mouse.Src != conf.Keyboard.Src ||
-		conf.Mouse.Ext != conf.Keyboard.Ext {
+		conf.Mouse.Src != conf.Keyboard.Src {
 		switch conf.Mouse.Type {
 		case config.MouseNone:
 			l.Warn().Println("mouse driver is none, no mouse output")
 		case config.MouseSerialPort:
 			l.Info().Println("mouse driver is serial port:", conf.Mouse.Src)
-			baud, err := conf.Mouse.Ext.GetInt("baud", 9600)
+			baud, err := conf.Mouse.Ext.GetBaud(DefaultBaud)
 			if err != nil {
 				return nil, err
 			}

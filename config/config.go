@@ -46,27 +46,27 @@ type Websocket struct {
 }
 
 type Video struct {
-	PreludeCommand string          `toml:"prelude_command"`
-	Type           VideoDriverType `toml:"type"`
-	Src            string          `toml:"src"`
-	Width          int             `toml:"width"`
-	Height         int             `toml:"height"`
-	FrameRate      float64         `toml:"frame_rate"`
-	Quality        int             `toml:"quality"`
-	SliceCount     SliceCount      `toml:"slice_count"`
-	Ext            TagString       `toml:"ext"`
+	SetupCommands []SetupCommand  `toml:"setup_commands"`
+	Type          VideoDriverType `toml:"type"`
+	Src           VideoSrc        `toml:"src"`
+	Width         int             `toml:"width"`
+	Height        int             `toml:"height"`
+	FrameRate     float64         `toml:"frame_rate"`
+	Quality       int             `toml:"quality"`
+	SliceCount    SliceCount      `toml:"slice_count"`
+	Ext           ExtMap          `toml:"ext"`
 }
 
 type Keyboard struct {
 	Type KeyboardDriverType `toml:"type"`
 	Src  string             `toml:"src"`
-	Ext  TagString          `toml:"ext"`
+	Ext  SerialPortExt      `toml:"ext"`
 }
 
 type Mouse struct {
 	Type MouseDriverType `toml:"type"`
 	Src  string          `toml:"src"`
-	Ext  TagString       `toml:"ext"`
+	Ext  SerialPortExt   `toml:"ext"`
 
 	// CursorXScale
 	// A factor to adjust the cursor move distance when the video is scaled.
@@ -80,7 +80,7 @@ type Mouse struct {
 type Button struct {
 	Type        ButtonDriverType `toml:"type"`
 	Src         string           `toml:"src"`
-	Ext         TagString        `toml:"ext"`
+	Ext         ExtMap           `toml:"ext"`
 	PowerButton string           `toml:"pwr_btn"`
 	ResetButton string           `toml:"rst_btn"`
 	ExtraButton string           `toml:"ext_btn"`
@@ -118,14 +118,11 @@ func GetConfig() (Config, error) {
 			Type: KeyboardNone,
 		},
 		Video: Video{
-			PreludeCommand: "",
-			Type:           "error",
-			Src:            "0",
-			Width:          1280,
-			Height:         720,
-			FrameRate:      15,
-			Quality:        100,
-			Ext:            "",
+			Type:      "error",
+			Width:     1280,
+			Height:    720,
+			FrameRate: 15,
+			Quality:   100,
 		},
 		Mouse: Mouse{
 			Type: MouseNone,

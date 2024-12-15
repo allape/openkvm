@@ -11,12 +11,12 @@ password = "passwd12"
 [keyboard]
 type = "serialport"
 src = "/dev/ttyACM0"
-ext = "baud:\"115200\""
+ext = { baud = "460800" }
 
 [mouse]
 type = "serialport"
 src = "/dev/ttyACM0"
-ext = "baud:\"115200\""
+ext = { baud = "460800" }
 cursor_x_scale = 25.6632
 cursor_y_scale = 45.5754925372
 

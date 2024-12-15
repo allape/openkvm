@@ -2,7 +2,6 @@ package shell
 
 import (
 	"fmt"
-	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
 	"image/jpeg"
 	"os"
@@ -20,7 +19,22 @@ func TestDriver(t *testing.T) {
 	}
 
 	driver := NewDriver(
-		config.NewShellCommand("[\"ffmpeg\", \"-f\", \"avfoundation\", \"-framerate\", \"30\", \"-pixel_format\", \"uyvy422\", \"-video_size\", \"1280x720\", \"-i\", \"default\", \"-f\", \"mjpeg\", \"-\"]"),
+		[]string{
+			"ffmpeg",
+			"-f",
+			"avfoundation",
+			"-framerate",
+			"30",
+			"-pixel_format",
+			"uyvy422",
+			"-video_size",
+			"1280x720",
+			"-i",
+			"default",
+			"-f",
+			"mjpeg",
+			"-",
+		},
 		&Options{
 			Options: video.Options{
 				Width:     1280,

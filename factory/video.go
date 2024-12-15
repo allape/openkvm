@@ -10,12 +10,12 @@ import (
 
 func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 	vos := video.Options{
-		Width:          conf.Video.Width,
-		Height:         conf.Video.Height,
-		FrameRate:      conf.Video.FrameRate,
-		Quality:        conf.Video.Quality,
-		SliceCount:     conf.Video.SliceCount,
-		PreludeCommand: config.NewShellCommand(conf.Video.PreludeCommand),
+		Width:         conf.Video.Width,
+		Height:        conf.Video.Height,
+		FrameRate:     conf.Video.FrameRate,
+		Quality:       conf.Video.Quality,
+		SliceCount:    conf.Video.SliceCount,
+		SetupCommands: conf.Video.SetupCommands,
 	}
 
 	switch conf.Video.Type {
@@ -25,10 +25,11 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 		//	Options: vos,
 		//})
 	case config.VideoShellDevice:
-		if conf.Video.Src == "" {
+		src := config.VideoShellSrc(conf.Video.Src)
+		if src.Empty() {
 			return nil, fmt.Errorf("video source is empty")
 		}
-		vd = shell.NewDriver(config.NewShellCommand(conf.Video.Src), &shell.Options{
+		vd = shell.NewDriver(src, &shell.Options{
 			Options: vos,
 		})
 	default:
