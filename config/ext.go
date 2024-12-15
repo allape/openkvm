@@ -1,6 +1,8 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"os/exec"
 	"strconv"
 )
@@ -56,18 +58,24 @@ func (e SerialPortExt) GetBaud(defaultValue int) (int, error) {
 type ButtonShellExt ExtMap
 
 func (e ButtonShellExt) GetCommand(fieldName, pin string) (*exec.Cmd, error) {
+	if pin == "" {
+		return nil, errors.New("pin is empty")
+	}
+
 	v, ok := e[fieldName]
 	if !ok {
 		return nil, nil
 	}
 
-	cmd, ok := v.([]string)
+	anyStrings, ok := v.([]any)
 	if !ok {
 		return nil, nil
 	}
 
-	for i, segment := range cmd {
-		if segment == "$PIN" {
+	cmd := make([]string, len(anyStrings))
+	for i, v := range anyStrings {
+		cmd[i] = fmt.Sprintf("%v", v)
+		if cmd[i] == "$PIN" {
 			cmd[i] = pin
 		}
 	}

@@ -17,6 +17,10 @@ type Button struct {
 }
 
 func (b *Button) Exec(cmd *exec.Cmd) error {
+	if cmd == nil {
+		return nil
+	}
+
 	bs, err := cmd.CombinedOutput()
 
 	output := string(bs)
@@ -76,25 +80,39 @@ func (b *Button) Close() error {
 }
 
 func (b *Button) Press(t button.Type) error {
-	cmd, err := b.Commander.GetPressCommand(b.GetButton(t))
+	btn := b.GetButton(t)
+	if btn == "" {
+		return errors.New("button not found")
+	}
+
+	cmd, err := b.Commander.GetPressCommand(btn)
 	if err != nil {
 		return err
 	}
+
 	err = b.Exec(cmd)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (b *Button) Release(t button.Type) error {
-	cmd, err := b.Commander.GetReleaseCommand(b.GetButton(t))
+	btn := b.GetButton(t)
+	if btn == "" {
+		return errors.New("button not found")
+	}
+
+	cmd, err := b.Commander.GetReleaseCommand(btn)
 	if err != nil {
 		return err
 	}
+
 	err = b.Exec(cmd)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

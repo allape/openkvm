@@ -11,19 +11,34 @@ password = "passwd12"
 [keyboard]
 type = "serialport"
 src = "/dev/ttyACM0"
-ext = { baud = "460800" }
+ext = { baud = "921600" }
 
 [mouse]
 type = "serialport"
 src = "/dev/ttyACM0"
-ext = { baud = "460800" }
+ext = { baud = "921600" }
 cursor_x_scale = 25.6632
 cursor_y_scale = 45.5754925372
 
 [video]
-prelude_command = "[\"usbreset\", \"UGREEN 25854\"]"
+setup_commands = [
+    [
+        "v4l2-ctl",
+        "--all",
+    ],
+    [
+        "usbreset",
+        "UGREEN 25854",
+    ],
+]
 type = "shell"
-src = "[\"v4l2-ctl\", \"--device=/dev/video0\", \"--stream-mmap\", \"--stream-to=-\", \"--set-fmt-video=width=1280,height=720,pixelformat=MJPG\"]"
+src = [
+    "v4l2-ctl",
+    "--device=/dev/video0",
+    "--stream-mmap",
+    "--set-fmt-video=width=1280,height=720,pixelformat=MJPG",
+    "--stream-to=-",
+]
 width = 1280
 height = 720
 frame_rate = 30.0
@@ -32,6 +47,6 @@ slice_count = 4
 
 [button]
 type = "shell"
-ext = "open:\"[\\\"gpio\\\", \\\"mode\\\", \\\"$PIN\\\", \\\"out\\\"]\" press:\"[\\\"gpio\\\", \\\"write\\\", \\\"$PIN\\\", \\\"1\\\"]\" release:\"[\\\"gpio\\\", \\\"write\\\", \\\"$PIN\\\", \\\"0\\\"]\""
+ext = { open = ["gpio", "mode", "$PIN", "out"], press = ["gpio", "write", "$PIN", "1"], release = ["gpio", "write", "$PIN", "0"] }
 pwr_btn = "3"
 rst_btn = "4"

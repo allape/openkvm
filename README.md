@@ -136,6 +136,24 @@ _**Price is for reference only, the actual price may vary.**_
           with [Arduino IDE](https://github.com/arduino/arduino-ide)
         - Select board `ESP32S3 Dev Module` and corresponding port
         - Click `Upload`
+            - For remote device, use https://arduino.github.io/arduino-cli/1.1/commands/arduino-cli_upload/ to upload the firmware with CLI instead of GUI.
+            - Here is the example for flash/burn on debian
+              ```shell
+              cd ~
+              # command below will install `arduino-cli` at ~/bin
+              curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+              echo "export PATH=\$PATH:$HOME/bin" >> ./.bashrc
+              source ./.bashrc
+              arduino-cli config init
+              arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_dev_index.json
+              arduino-cli config set network.proxy "http://localhost:1080" # optional, because arduino-cli may NOT respect http_proxy or https_proxy environment variables
+              arduino-cli core update-index
+              arduino-cli core install esp32:esp32 # this will takes a while...
+              cd openkvm # change to the directory where the project located
+              cd ./km/esp32s3-arduino/main/
+              arduino-cli compile -b esp32:esp32:esp32s3 .
+              arduino-cli upload . --fqbn esp32:esp32:esp32s3 -p /dev/ttyACM0 # change to your port
+              ``` 
 5. Run or build repo
    ```shell
    cd openkvm

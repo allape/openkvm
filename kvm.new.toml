@@ -1,9 +1,6 @@
 # This file is written in TOML format
 # See https://toml.io/en/
 
-# `ext` argument is written in Golang struct tag format
-# See https://go.dev/ref/spec#Tag
-
 # Shell command must be written in the JSON array format to prevent unexpected splitting.
 
 [websocket]
@@ -25,7 +22,7 @@ password = "passwd12"
 # none, serialport
 type = "serialport"
 src = "/dev/ttyACM0"
-ext = { baud = "460800" }
+ext = { baud = "921600" }
 
 [video]
 # Commands run before video capture. All of them must return 0, otherwise an error will be emitted.
@@ -90,7 +87,7 @@ ext = ""
 # none, serialport
 type = "serialport"
 src = "/dev/ttyACM0"
-ext = { baud = "460800" }
+ext = { baud = "921600" }
 
 # A factor to adjust the cursor move distance when the video is scaled.
 # Suggested scale:
@@ -107,7 +104,7 @@ cursor_y_scale = 45.5754925372
 # none, serialport, shell
 #type = "serialport"
 #src = "/dev/ttyACM0"
-#ext = { baud = "460800" }
+#ext = { baud = "921600" }
 type = "shell"
 # Demo for OrangePI https://github.com/orangepi-xunlong/wiringOP
 ext = { open = ["gpio", "mode", "$PIN", "out"], press = ["gpio", "write", "$PIN", "1"], release = ["gpio", "write", "$PIN", "0"] }
