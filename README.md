@@ -16,7 +16,7 @@ My dev walkthrough is in [WALKTHROUGH.md](./WALKTHROUGH.md).
 
 ### TODO
 
-- [x] Remove OpenCV, see [WALKTHROUGH.md](WALKTHROUGH.md#opencv)
+- [x] Remove OpenCV, see [WALKTHROUGH.md](WALKTHROUGH.md#opencv) for the reason of removal
 - [ ] Installation script
     - [ ] Register as a system service
     - [ ] Start on boot
@@ -91,8 +91,7 @@ _**Price is for reference only, the actual price may vary.**_
 ### Software
 
 - [GO](https://go.dev/)
-- [OpenCV](https://opencv.org/)
-- [PlatformIO](https://platformio.org/)
+- [Arduino](https://www.arduino.cc/)
 - [noVNC](https://github.com/novnc/noVNC)
 
 ## Diagram
@@ -117,7 +116,7 @@ _**Price is for reference only, the actual price may vary.**_
    ```shell
    sudo apt-get update
    sudo apt-get install -y git
-   git clone https://github.com/allape/openkvm.git
+   git clone --depth 1 https://github.com/allape/openkvm.git
    ```
 3. Get noNVC
    ```shell
@@ -127,7 +126,7 @@ _**Price is for reference only, the actual price may vary.**_
    python3 -m http.server --directory noVNC/ 8081
    ```
 4. Flash ESP32-S3
-    - [PIO](https://platformio.org/): See [WALKTHROUGH.md](WALKTHROUGH.md#pio-of-esp32) for reason of removal.
+    - [PIO](https://platformio.org/): See [WALKTHROUGH.md](WALKTHROUGH.md#pio-of-esp32) for the reason of removal
     - [Arduino](https://www.arduino.cc/)
         - Open `Perferences` -> `Additional Board Manager URLs` ->
           Add `https://espressif.github.io/arduino-esp32/package_esp32_dev_index.json`
@@ -136,8 +135,8 @@ _**Price is for reference only, the actual price may vary.**_
           with [Arduino IDE](https://github.com/arduino/arduino-ide)
         - Select board `ESP32S3 Dev Module` and corresponding port
         - Click `Upload`
-            - For remote device, use https://arduino.github.io/arduino-cli/1.1/commands/arduino-cli_upload/ to upload the firmware with CLI instead of GUI.
-            - Here is the example for flash/burn on debian
+            - For deployed device, use [Arduino CLI](https://arduino.github.io/arduino-cli/1.1/installation/) to compile and upload firmware
+            - Here is an example on `Debian` with an `ESP32-S3` connected to `/dev/ttyACM0`
               ```shell
               cd ~
               # command below will install `arduino-cli` at ~/bin
@@ -158,7 +157,6 @@ _**Price is for reference only, the actual price may vary.**_
    ```shell
    cd openkvm
    
-   go mod tidy
    go mod download
    
    cp kvm.new.toml kvm.toml
@@ -184,7 +182,6 @@ _**Price is for reference only, the actual price may vary.**_
 - [Listed in go.mod](./go.mod)
 - [Roboto Font](https://fonts.google.com/specimen/Roboto/about)
 - [noVNC](https://github.com/novnc/noVNC)
-- [PlatformIO](https://platformio.org/)
 - [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/index.html)
 - [ESP32-Arduino](https://docs.espressif.com/projects/arduino-esp32/en/latest/getting_started.html)
 - [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
