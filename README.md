@@ -1,9 +1,7 @@
 # OpenKVM
 
-DIY KVM device for remote-controlling a computer. `KVM` stands for `Keyboard & Video & Mouse`.
-
-A side system on a rackmount server,
-[`IPMI`](https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface) in `Dell Server` for example.
+Make an old laptop or a single board computer into a KVM device to control a computer remotely.
+`KVM` stands for `Keyboard & Video & Mouse` instead of `Linux Kernel Virtual Machine`.
 
 Unlike the [IP-KVM](https://github.com/tiny-pilot/tinypilot), this project
 respects [VNC protocol](https://datatracker.ietf.org/doc/html/rfc6143).
@@ -41,32 +39,27 @@ My dev walkthrough is in [WALKTHROUGH.md](./WALKTHROUGH.md).
 
 Essential hardware are:
 
-- A computer that can run [Golang](https://go.dev/)
-    - An old computer
+- A device that can run [Golang](https://go.dev/)
+    - A personal computer or a laptop
     - SBC
         - [RaspberryPi](https://www.raspberrypi.com/)
         - [OrangePi](https://www.orangepi.org/)
         - [BTT-Pi](https://bigtree-tech.com/blogs/news/new-release-bigtreetech-btt-pi)
         - etc...
-    - Maybe an Android phone?
 - `HDMI Recorder`, see [WALKTHROUGH.md](WALKTHROUGH.md#problem-with-hdmi-recorder) for more details.
-    - Or a `webcam` with an always-on monitor.
-        - I know...this is a stupid way -- pointing a camera to a screen.
+    - Or a `webcam` pointing to an always-on monitor.
 - Keyboard & Mouse Emulator
     - ESP32-S3
-    - ESP32-S2
-    - Arduino?
     - Some other device that supports USB HID output.
         - HID over BLE is not recommended, because it may not work in BIOS.
 - Relay and/or delayed relay
 
-#### My Gears
+#### My Setup
 
 - `SBC`: [OrangePi 3 LTS](http://www.orangepi.cn/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-3-LTS.html)
     - `¥241 RMB` ≈ `$34 USD`
-- `HDMI Recorder`: [hagibis UHC07](https://cn.hagibis.com/products-p00222p1.html)
-    - `¥69 RMB` ≈ `$10 USD`
-    - ⚠️ This device **ONLY** supports 1920x1080 and 3840x2160.
+- `HDMI Recorder`: [UGREEN CM716](https://item.m.jd.com/product/100069462730.html)
+    - `¥84 RMB` ≈ `$12 USD`
 - `Keyboard & Mouse`: [ESP32-S3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html)
     - I bought a third-party one of [WeAct ESP32 S3 (A) DevKitC 1](https://github.com/WeActStudio).
     - `¥52 RMB` ≈ `$7.5 USD`
@@ -83,8 +76,6 @@ Essential hardware are:
 - Some `USB Type-C2C/C2A` cables.
 - A `HDMI` cable.
 - Some power supplies.
-
-It costs about `¥300 RMB` ≈ `40 USD`.
 
 _**Price is for reference only, the actual price may vary.**_
 
@@ -165,7 +156,7 @@ _**Price is for reference only, the actual price may vary.**_
    dmesg | grep tty
    
    # Edit this file to apply your settings
-   vim kvm.toml
+   vim kvm.toml # kvm.example.onragepi.ugreen_25854.toml for example
    
    # Should run with super user privilege
    sudo go run .

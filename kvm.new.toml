@@ -1,8 +1,6 @@
 # This file is written in TOML format
 # See https://toml.io/en/
 
-# Shell command must be written in the JSON array format to prevent unexpected splitting.
-
 [websocket]
 # `127.0.0.1:8080` listen for 127.0.0.1 only
 # `:8080` can be accessed by any device
@@ -19,7 +17,7 @@ username = "openkvm"
 password = "passwd12"
 
 [keyboard]
-# none, serialport
+# `none`, `serialport`
 type = "serialport"
 src = "/dev/ttyACM0"
 ext = { baud = "921600" }
@@ -43,12 +41,15 @@ ext = { baud = "921600" }
 #        "Hagibis",
 #    ],
 #]
-# usb(deprecated & removed), shell(only mpeg format is supported)
+
+# `usb`, `shell`
+# `usb`: removed
+# `shell`: only mpeg format is supported
 type = "shell"
 
-# usb: either the index of video device or the path to video device.
+# `usb`: either the index of video device or the path to video device.
 #src = ["0"]
-# shell: command to get frame
+# `shell`: command to get frame
 src = [
     "v4l2-ctl",
     "--device=/dev/video0",
@@ -84,7 +85,7 @@ slice_count = 4
 ext = ""
 
 [mouse]
-# none, serialport
+# `none`, `serialport`
 type = "serialport"
 src = "/dev/ttyACM0"
 ext = { baud = "921600" }
@@ -101,10 +102,7 @@ cursor_x_scale = 25.6632
 cursor_y_scale = 45.5754925372
 
 [button]
-# none, serialport, shell
-#type = "serialport"
-#src = "/dev/ttyACM0"
-#ext = { baud = "921600" }
+# `none`, `serialport`, `shell`
 type = "shell"
 # Demo for OrangePI https://github.com/orangepi-xunlong/wiringOP
 ext = { open = ["gpio", "mode", "$PIN", "out"], press = ["gpio", "write", "$PIN", "1"], release = ["gpio", "write", "$PIN", "0"] }
@@ -114,3 +112,7 @@ pwr_btn = "0"
 rst_btn = "1"
 # GPIO Pin for extra button
 ext_btn = "2"
+
+#type = "serialport" # see `km/esp32s3-arduino/main/main.ino` for more detail
+#src = "/dev/ttyACM0"
+#ext = { baud = "921600" }
