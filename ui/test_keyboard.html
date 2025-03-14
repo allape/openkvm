@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Keyboard Test</title>
+  <style>
+      html {
+          --backgroundColor: #eee;
+          --color: black;
+          background-color: var(--backgroundColor, #eee);
+          color: var(--color, black);
+      }
+
+      @media (prefers-color-scheme: dark) {
+          html {
+              --backgroundColor: #333;
+              --color: white;
+          }
+      }
+
+      #Logger {
+          width: 100%;
+          border-collapse: collapse;
+
+          td {
+              border: 1px solid var(--color, black);
+              padding: 5px;
+          }
+      }
+  </style>
+</head>
+<body>
+<table id="Logger">
+  <thead>
+  <tr>
+    <td>Time</td>
+    <td>Type</td>
+    <td>Key</td>
+    <td>Code</td>
+    <td>Masks</td>
+  </tr>
+  </thead>
+  <tbody>
+
+  </tbody>
+</table>
+<script>
+  /**
+   * @return {string}
+   */
+  function now() {
+    return performance.now().toFixed(2);
+  }
+
+  /**
+   * @param {'keydown' | 'keyup'} type
+   * @param {KeyboardEvent} e
+   */
+  function printKeyboardEvent(type, e) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${now()}</td>
+      <td>${type}</td>
+      <td>${e.key}</td>
+      <td>${e.code}</td>
+      <td>${e.ctrlKey ? `+ ctrl` : ''} ${e.shiftKey ? `+ shift` : ''} ${e.altKey ? `+ alt` : ''} ${e.metaKey ? `+ meta` : ''}</td>
+    `;
+    document.querySelector('#Logger tbody').insertBefore(row, document.querySelector('#Logger tbody').firstChild);
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('keydown', (e) => printKeyboardEvent('keydown', e));
+    window.addEventListener('keyup', (e) => printKeyboardEvent('keyup', e));
+  });
+</script>
+</body>
+</html>

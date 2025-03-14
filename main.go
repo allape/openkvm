@@ -23,18 +23,33 @@ import (
 
 var l = gogger.New("main")
 
-const (
-	ButtonHTMLPath = "ui/button.html"
-)
-
 var ValidTypes = []button.Type{
 	button.PowerButton,
 	button.ResetButton,
 	button.ExtraButton,
 }
 
-//go:embed ui/button.html
-var ButtonHTML string
+const (
+	ButtonHTMLPath       = "ui/button.html"
+	TestKeyboardHTMLPath = "ui/test_keyboard.html"
+)
+
+var (
+	//go:embed ui/button.html
+	ButtonHTML string
+	//go:embed ui/test_keyboard.html
+	TestKeyboardHTML string
+)
+
+func serveHTML(group *gin.RouterGroup, uri, content, filePath string) {
+	group.GET(uri, func(context *gin.Context) {
+		if stat, err := os.Stat(filePath); err == nil && !stat.IsDir() {
+			context.File(filePath)
+		} else {
+			context.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
+		}
+	})
+}
 
 func main() {
 	err := gogger.InitFromEnv()
@@ -208,13 +223,8 @@ func main() {
 	})
 
 	uiGroup := engine.Group("/ui", basicAuth)
-	uiGroup.GET("/button.html", func(context *gin.Context) {
-		if stat, err := os.Stat(ButtonHTMLPath); err == nil && !stat.IsDir() {
-			context.File(ButtonHTMLPath)
-		} else {
-			context.Data(http.StatusOK, "text/html; charset=utf-8", []byte(ButtonHTML))
-		}
-	})
+	serveHTML(uiGroup, "/button.html", ButtonHTML, ButtonHTMLPath)
+	serveHTML(uiGroup, "/test_keyboard.html", TestKeyboardHTML, TestKeyboardHTMLPath)
 
 	if conf.VNC.Path != "" {
 		engine.NoRoute(func(context *gin.Context) {

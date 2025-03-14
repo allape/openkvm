@@ -17,16 +17,18 @@ const MagicWord = "open-kvm"
 type KeyboardMouseDriver struct {
 	keymouse.Driver
 
-	locker sync.Locker
-	Port   serial.Port
+	openLocker  sync.Locker
+	writeLocker sync.Locker
+
+	Port serial.Port
 
 	Name string
 	Baud int
 }
 
 func (d *KeyboardMouseDriver) Open() error {
-	d.locker.Lock()
-	defer d.locker.Unlock()
+	d.openLocker.Lock()
+	defer d.openLocker.Unlock()
 
 	if d.Port != nil {
 		return errors.New("port already open")
@@ -72,8 +74,8 @@ func (d *KeyboardMouseDriver) Open() error {
 }
 
 func (d *KeyboardMouseDriver) Close() error {
-	d.locker.Lock()
-	defer d.locker.Unlock()
+	d.openLocker.Lock()
+	defer d.openLocker.Unlock()
 
 	if d.Port == nil {
 		return nil
@@ -90,6 +92,9 @@ func (d *KeyboardMouseDriver) Write(data []byte) (int, error) {
 	if d.Port == nil {
 		return 0, err
 	}
+
+	d.writeLocker.Lock()
+	defer d.writeLocker.Unlock()
 
 	n, err := d.Port.Write(data)
 	if err != nil {
@@ -112,8 +117,9 @@ func (d *KeyboardMouseDriver) SendPointerEvent(e keymouse.PointerEvent) error {
 
 func New(name string, baud int) keymouse.Driver {
 	return &KeyboardMouseDriver{
-		locker: &sync.Mutex{},
-		Name:   name,
-		Baud:   baud,
+		openLocker:  &sync.Mutex{},
+		writeLocker: &sync.Mutex{},
+		Name:        name,
+		Baud:        baud,
 	}
 }
