@@ -102,6 +102,7 @@ _**Price is for reference only, the actual price may vary.**_
    GO_ZIP="go1.23.3.linux-arm64.tar.gz"
    wget "https://go.dev/dl/$GO_ZIP"
    sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "$GO_ZIP"
+   export PATH=$PATH:/usr/local/go/bin
    ```
 2. Pull this repo
    ```shell
@@ -159,9 +160,10 @@ _**Price is for reference only, the actual price may vary.**_
    vim kvm.toml # kvm.example.onragepi.ugreen_25854.toml for example
    
    # Should run with super user privilege
-   sudo go run .
+   # export PATH=$PATH:/usr/local/go/bin
+   sudo /usr/local/go/bin/go run .
    
-   #go build -o openkvm .
+   #/usr/local/go/bin/go build -o openkvm .
    #sudo ./openkvm
    ```
 6. Open browser and go to http://ip:8080/vnc.html, then click `Connect`
