@@ -147,6 +147,8 @@ _**Price is for reference only, the actual price may vary.**_
               ``` 
 5. Run or build repo
    ```shell
+   export PATH=$PATH:/usr/local/go/bin
+   
    cd openkvm
    
    go mod download
@@ -160,7 +162,6 @@ _**Price is for reference only, the actual price may vary.**_
    vim kvm.toml # kvm.example.onragepi.ugreen_25854.toml for example
    
    # Should run with super user privilege
-   # export PATH=$PATH:/usr/local/go/bin
    sudo /usr/local/go/bin/go run .
    
    #/usr/local/go/bin/go build -o openkvm .
