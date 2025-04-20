@@ -1,0 +1,31 @@
+[websocket]
+addr = ":8080"
+path = "/websockify"
+cors = false
+
+[vnc]
+path = "../noVNC"
+
+[video]
+type = "dummy"
+src = ["dummie~"]
+width = 1280
+height = 720
+frame_rate = 16
+slice_count = 4
+
+[keyboard]
+type = "serialport"
+src = "/dev/ttyACM0"
+ext = { baud = "921600" }
+
+[mouse]
+type = "serialport"
+src = "/dev/ttyACM0"
+ext = { baud = "921600" }
+
+[button]
+type = "shell"
+ext = { open = ["echo", "$PIN"], press = ["echo", "$PIN"], release = ["echo", "$PIN"] }
+pwr_btn = "3"
+rst_btn = "4"

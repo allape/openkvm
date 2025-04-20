@@ -151,6 +151,8 @@ func (s *Server) challenge(client *Client) (err error) {
 		return err
 	}
 
+	client.respSecurityType = SecurityType(st[0])
+
 	switch SecurityType(st[0]) {
 	case None:
 		//err = client.Close("Unsupported auth type")
@@ -179,15 +181,13 @@ func (s *Server) challenge(client *Client) (err error) {
 		if err != nil {
 			return client.Close(InternalServerError.Error())
 		}
+
+		return nil
 	case Plain:
 		return nil
 	default:
 		return client.Close("Unsupported auth type")
 	}
-
-	client.respSecurityType = SecurityType(st[0])
-
-	return nil
 }
 
 func (s *Server) auth(client *Client) (ok bool, err error) {
