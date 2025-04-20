@@ -408,5 +408,5 @@ void loop() {
   while (Serial.available() > 0) {
     serialport->push(Serial.read());
   }
-  delay(500);
+  delay(1);
 }

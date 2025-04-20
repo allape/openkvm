@@ -31,13 +31,13 @@ var ValidTypes = []button.Type{
 
 const (
 	ButtonHTMLPath       = "ui/button.html"
-	TestKeyboardHTMLPath = "ui/test_keyboard.html"
+	TestKeyboardHTMLPath = "ui/testkeyboard.html"
 )
 
 var (
 	//go:embed ui/button.html
 	ButtonHTML string
-	//go:embed ui/test_keyboard.html
+	//go:embed ui/testkeyboard.html
 	TestKeyboardHTML string
 )
 
@@ -224,7 +224,7 @@ func main() {
 
 	uiGroup := engine.Group("/ui", basicAuth)
 	serveHTML(uiGroup, "/button.html", ButtonHTML, ButtonHTMLPath)
-	serveHTML(uiGroup, "/test_keyboard.html", TestKeyboardHTML, TestKeyboardHTMLPath)
+	serveHTML(uiGroup, "/testkeyboard.html", TestKeyboardHTML, TestKeyboardHTMLPath)
 
 	if conf.VNC.Path != "" {
 		engine.NoRoute(func(context *gin.Context) {

@@ -23,6 +23,8 @@ ext = { baud = "921600" }
 type = "serialport"
 src = "/dev/ttyACM0"
 ext = { baud = "921600" }
+cursor_x_scale = 25.6632
+cursor_y_scale = 45.5754925372
 
 [button]
 type = "shell"

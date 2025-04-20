@@ -18,6 +18,17 @@
           }
       }
 
+      .text {
+          width: 100%;
+          display: flex;
+          justify-content: stretch;
+          align-items: flex-start;
+          padding-bottom: 5px;
+          textarea {
+              flex: 1;
+          }
+      }
+
       #Logger {
           width: 100%;
           border-collapse: collapse;
@@ -30,6 +41,9 @@
   </style>
 </head>
 <body>
+<div class="text">
+  <textarea rows="10" placeholder="Put text here"></textarea>
+</div>
 <table id="Logger">
   <thead>
   <tr>
