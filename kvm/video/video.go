@@ -15,9 +15,7 @@ type Driver interface {
 
 	GetFrameRate() float64
 	GetSize() (*image.Point, error)
-	GetPlaceholderImage(text string) (config.Frame, error)
 
-	Reset() error
 	GetFrame() (config.Frame, Changed, error)
 	GetNextImageRects(count config.SliceCount, full bool) ([]config.Rect, error)
 }

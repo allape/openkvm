@@ -15,6 +15,7 @@ type VideoDriverType string
 const (
 	VideoUSBDevice   VideoDriverType = "usb"
 	VideoShellDevice VideoDriverType = "shell"
+	VideoDummyDevice VideoDriverType = "dummy"
 )
 
 type KeyboardDriverType string

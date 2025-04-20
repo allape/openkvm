@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
+	"github.com/allape/openkvm/kvm/video/dummy"
 	"github.com/allape/openkvm/kvm/video/shell"
 )
 
@@ -30,6 +31,14 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 			return nil, fmt.Errorf("video source is empty")
 		}
 		vd = shell.NewDriver(src, &shell.Options{
+			Options: vos,
+		})
+	case config.VideoDummyDevice:
+		if conf.Video.Src.Empty() {
+			return nil, fmt.Errorf("video source is empty")
+		}
+		src := conf.Video.Src[0]
+		vd = dummy.NewDriver(src, &dummy.Options{
 			Options: vos,
 		})
 	default:

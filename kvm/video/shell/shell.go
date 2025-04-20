@@ -6,9 +6,7 @@ import (
 	"github.com/allape/gogger"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
-	"github.com/allape/openkvm/kvm/video/placeholder"
 	"image"
-	"image/color"
 	"image/jpeg"
 	"io"
 	"os"
@@ -197,25 +195,6 @@ func (d *Driver) GetFrameRate() float64 {
 
 func (d *Driver) GetSize() (*image.Point, error) {
 	return &image.Point{X: d.Width, Y: d.Height}, nil
-}
-
-func (d *Driver) GetPlaceholderImage(text string) (config.Frame, error) {
-	return placeholder.CreatePlaceholder(
-		d.Width, d.Height,
-		color.RGBA{A: 255},
-		color.RGBA{R: 255, G: 0, B: 0, A: 255},
-		text,
-		true,
-	)
-}
-
-func (d *Driver) Reset() error {
-	d.bufferLocker.Lock()
-	defer d.bufferLocker.Unlock()
-
-	d.frameBuffer = nil
-
-	return nil
 }
 
 func (d *Driver) GetFrame() (config.Frame, video.Changed, error) {
