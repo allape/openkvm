@@ -14,8 +14,6 @@ func VideoFromConfig(conf config.Config) (vd video.Driver, err error) {
 		Width:         conf.Video.Width,
 		Height:        conf.Video.Height,
 		FrameRate:     conf.Video.FrameRate,
-		Quality:       conf.Video.Quality,
-		SliceCount:    conf.Video.SliceCount,
 		SetupCommands: conf.Video.SetupCommands,
 	}
 

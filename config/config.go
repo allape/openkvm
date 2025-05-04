@@ -41,9 +41,10 @@ const (
 )
 
 type Websocket struct {
-	Addr string `toml:"addr"`
-	Path string `toml:"path"`
-	Cors bool   `toml:"cors"`
+	Addr    string `toml:"addr"`
+	Path    string `toml:"path"`
+	Cors    bool   `toml:"cors"`
+	Timeout int    `toml:"timeout"` // in sec
 }
 
 type Video struct {
@@ -112,8 +113,9 @@ func GetConfig() (Config, error) {
 
 	config := Config{
 		Websocket: Websocket{
-			Addr: ":8080",
-			Path: "/websockify",
+			Addr:    ":8080",
+			Path:    "/websockify",
+			Timeout: 30,
 		},
 		Keyboard: Keyboard{
 			Type: KeyboardNone,

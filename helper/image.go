@@ -1,4 +1,4 @@
-package video
+package helper
 
 import (
 	"errors"
@@ -36,14 +36,18 @@ type SubImager interface {
 	SubImage(r image.Rectangle) image.Image
 }
 
-func GetNextImageRects(lastImage, currImg image.Image, sliceCount config.SliceCount, full bool) ([]config.Rect, error) {
-	sc := int(sliceCount)
-
-	if currImg == nil {
-		return nil, errors.New("current image is nil")
+func CalcNextImageRects(previewImage, nextImage image.Image, sliceCount config.SliceCount) ([]config.Rect, error) {
+	if previewImage == nextImage {
+		return nil, nil
 	}
 
-	img, ok := currImg.(SubImager)
+	sc := int(sliceCount)
+
+	if nextImage == nil {
+		return nil, errors.New("next image is nil")
+	}
+
+	img, ok := nextImage.(SubImager)
 	if !ok {
 		return nil, errors.New("image does not support sub-imaging")
 	}
@@ -72,7 +76,7 @@ func GetNextImageRects(lastImage, currImg image.Image, sliceCount config.SliceCo
 		rectChangedMarks[i] = make([]bool, rowCount)
 	}
 
-	if lastImage == nil || full {
+	if previewImage == nil {
 		for i := 0; i < colCount; i++ {
 			for j := 0; j < rowCount; j++ {
 				rectChangedMarks[i][j] = true
@@ -85,7 +89,7 @@ func GetNextImageRects(lastImage, currImg image.Image, sliceCount config.SliceCo
 				wait.Add(1)
 				go func(x, y int) {
 					defer wait.Done()
-					rectChangedMarks[x][y] = ImageChanged(lastImage, currImg, imageSize, x*rectSize.X, y*rectSize.Y, rectSize.X, rectSize.Y)
+					rectChangedMarks[x][y] = ImageChanged(previewImage, nextImage, imageSize, x*rectSize.X, y*rectSize.Y, rectSize.X, rectSize.Y)
 				}(i, j)
 			}
 		}

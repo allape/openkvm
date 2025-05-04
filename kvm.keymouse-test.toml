@@ -8,10 +8,10 @@ path = "../noVNC"
 
 [video]
 type = "dummy"
-src = ["dummie~"]
+src = ["Keyboard & Mouse Test"]
 width = 1280
 height = 720
-frame_rate = 16
+frame_rate = 2
 slice_count = 4
 
 [keyboard]
@@ -24,7 +24,7 @@ type = "serialport"
 src = "/dev/ttyACM0"
 ext = { baud = "921600" }
 cursor_x_scale = 25.6632
-cursor_y_scale = 45.5754925372
+cursor_y_scale = 45.5755
 
 [button]
 type = "shell"

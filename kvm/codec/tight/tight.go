@@ -3,16 +3,24 @@ package tight
 import (
 	"bytes"
 	"github.com/allape/openkvm/config"
+	"github.com/allape/openkvm/helper"
 	"github.com/allape/openkvm/kvm/codec"
 	"image/jpeg"
 )
 
 type JPEGEncoder struct {
 	codec.Codec
-	Quality int
+
+	Quality    int
+	SliceCount config.SliceCount
 }
 
-func (e *JPEGEncoder) FramebufferUpdate(rects []config.Rect) ([]byte, error) {
+func (e *JPEGEncoder) FramebufferUpdate(previewFrame, nextFrame config.Frame) ([]byte, error) {
+	rects, err := helper.CalcNextImageRects(previewFrame, nextFrame, e.SliceCount)
+	if err != nil {
+		return nil, err
+	}
+
 	count := len(rects)
 	var payload = []byte{
 		0,                             // FramebufferUpdate

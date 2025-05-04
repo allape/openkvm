@@ -5,5 +5,5 @@ import (
 )
 
 type Codec interface {
-	FramebufferUpdate(rects []config.Rect) ([]byte, error)
+	FramebufferUpdate(previewFrame, nextFrame config.Frame) ([]byte, error)
 }

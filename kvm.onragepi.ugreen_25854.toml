@@ -18,7 +18,7 @@ type = "serialport"
 src = "/dev/ttyACM0"
 ext = { baud = "921600" }
 cursor_x_scale = 25.6632
-cursor_y_scale = 45.5754925372
+cursor_y_scale = 45.5755
 
 [video]
 setup_commands = [
@@ -41,7 +41,7 @@ src = [
 ]
 width = 1280
 height = 720
-frame_rate = 30.0
+frame_rate = 24
 quality = 75
 slice_count = 4
 

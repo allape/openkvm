@@ -6,7 +6,6 @@ import (
 	"github.com/allape/gogger"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
-	"image"
 	"image/jpeg"
 	"io"
 	"os"
@@ -29,12 +28,10 @@ type Driver struct {
 	bufferLocker         sync.Locker
 	frameBufferUpdatedAt int64
 
-	lastGotFrame   config.Frame
-	getFrameLocker sync.Locker
-	getFrameAt     int64
-
-	rects       []config.Rect
-	rectsLocker sync.Locker
+	lastTime           int64
+	lastFrame          config.Frame
+	nextFrameLocker    sync.Locker
+	nextFrameInvokedAt int64
 
 	Width       int
 	Height      int
@@ -193,64 +190,41 @@ func (d *Driver) GetFrameRate() float64 {
 	return d.FrameRate
 }
 
-func (d *Driver) GetSize() (*image.Point, error) {
-	return &image.Point{X: d.Width, Y: d.Height}, nil
+func (d *Driver) GetSize() (*config.Size, error) {
+	return &config.Size{X: d.Width, Y: d.Height}, nil
 }
 
-func (d *Driver) GetFrame() (config.Frame, video.Changed, error) {
-	d.getFrameLocker.Lock()
-	defer d.getFrameLocker.Unlock()
+func (d *Driver) NextFrame() (config.Frame, error) {
+	d.nextFrameLocker.Lock()
+	defer d.nextFrameLocker.Unlock()
 
-	updatedAt := d.frameBufferUpdatedAt
+	now := time.Now().UnixMilli()
+	if now-d.lastTime <= int64(1000/d.FrameRate) {
+		return d.lastFrame, nil
+	}
+
+	d.lastTime = now
+
 	buf := d.frameBuffer
+	updatedAt := d.frameBufferUpdatedAt
 
 	if buf == nil {
-		return nil, false, nil
+		return nil, nil
 	}
 
-	if updatedAt > 0 && updatedAt == d.getFrameAt {
-		return d.lastGotFrame, false, nil
+	if updatedAt > 0 && updatedAt == d.nextFrameInvokedAt {
+		return d.lastFrame, nil
 	}
 
-	img, err := jpeg.Decode(bytes.NewReader(d.frameBuffer))
-	if err != nil {
-		return nil, false, err
-	}
-
-	d.lastGotFrame = img
-	d.getFrameAt = updatedAt
-
-	return img, true, nil
-}
-
-func (d *Driver) GetNextImageRects(sliceCount config.SliceCount, full bool) ([]config.Rect, error) {
-	d.rectsLocker.Lock()
-	defer d.rectsLocker.Unlock()
-
-	var lastImage image.Image
-
-	if d.lastGotFrame != nil {
-		lastImage = d.lastGotFrame
-	}
-
-	im, changed, err := d.GetFrame()
+	img, err := jpeg.Decode(bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}
 
-	if len(d.rects) > 0 && changed == false && !full {
-		return d.rects, nil
-	}
+	d.lastFrame = img
+	d.nextFrameInvokedAt = updatedAt
 
-	img := im.(image.Image)
-
-	rects, err := video.GetNextImageRects(lastImage, img, sliceCount, full)
-
-	if !full {
-		d.rects = rects
-	}
-
-	return rects, nil
+	return img, nil
 }
 
 type Options struct {
@@ -276,10 +250,9 @@ func NewDriver(src config.VideoShellSrc, options *Options) video.Driver {
 		src:           src,
 		setupCommands: options.SetupCommands,
 
-		locker:         &sync.Mutex{},
-		bufferLocker:   &sync.Mutex{},
-		getFrameLocker: &sync.Mutex{},
-		rectsLocker:    &sync.Mutex{},
+		locker:          &sync.Mutex{},
+		bufferLocker:    &sync.Mutex{},
+		nextFrameLocker: &sync.Mutex{},
 
 		Width:       options.Width,
 		Height:      options.Width,

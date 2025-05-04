@@ -2,6 +2,7 @@ package shell
 
 import (
 	"fmt"
+	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/kvm/video"
 	"image/jpeg"
 	"os"
@@ -56,16 +57,20 @@ func TestDriver(t *testing.T) {
 		t.Fatalf("Expected 30, got %f", driver.GetFrameRate())
 	}
 
+	var lastFrame config.Frame
+
 	for i := 0; i < 10; i++ {
-		frame, changed, err := driver.GetFrame()
+		frame, err := driver.NextFrame()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !changed {
+		if frame == lastFrame {
 			time.Sleep(35 * time.Millisecond)
 			continue
 		}
+
+		lastFrame = frame
 
 		err = func() error {
 			file, err := os.Create(path.Join(TestData, fmt.Sprintf("frame.%04d.jpg", i)))

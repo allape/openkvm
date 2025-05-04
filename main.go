@@ -152,7 +152,7 @@ func main() {
 			l.Error().Println("open video:", err)
 			return
 		}
-		err = server.HandleClient(Websockets2KVMClient(conn))
+		err = server.HandleClient(Websockets2KVMClient(conn, time.Duration(conf.Websocket.Timeout)*time.Second))
 		if err != nil {
 			l.Warn().Println("handle client:", err)
 		}

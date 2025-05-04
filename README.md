@@ -159,7 +159,7 @@ _**Price is for reference only, the actual price may vary.**_
    dmesg | grep tty
    
    # Edit this file to apply your settings
-   vim kvm.toml # kvm.example.onragepi.ugreen_25854.toml for example
+   vim kvm.toml # kvm.onragepi.ugreen_25854.toml for example
    
    # Should run with super user privilege
    sudo /usr/local/go/bin/go run .

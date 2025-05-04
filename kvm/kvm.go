@@ -297,20 +297,19 @@ func (s *Server) handleFramebufferUpdateRequest(client *Client) error {
 
 	_ = client.Read(client.framebufferUpdateRequest)
 
-	rects, err := s.Video.GetNextImageRects(s.Options.Config.Video.SliceCount, !client.fulfilled)
-	if err != nil {
-		return err
-	}
-	frame, err := s.VideoCodec.FramebufferUpdate(rects)
+	frame, err := s.Video.NextFrame()
 	if err != nil {
 		return err
 	}
 
-	if len(rects) > 0 {
-		client.fulfilled = true
+	buffer, err := s.VideoCodec.FramebufferUpdate(client.previewFrame, frame)
+	if err != nil {
+		return err
 	}
 
-	_, err = client.Write(frame)
+	client.previewFrame = frame
+
+	_, err = client.Write(buffer)
 	if err != nil {
 		return err
 	}
@@ -460,7 +459,6 @@ func (s *Server) HandleClient(client *Client) error {
 				l.Warn().Println("SetEncodings error:", err)
 				continue
 			}
-			continue
 		case FramebufferUpdateRequest:
 			err = s.handleFramebufferUpdateRequest(client)
 			if err != nil {
@@ -578,10 +576,10 @@ type Client struct {
 	locker   sync.Locker
 	buffer   []byte
 	leftover []byte
+	timeout  time.Duration
 
 	respSecurityType SecurityType
 	challenge        []byte
-	fulfilled        bool
 
 	framebufferUpdateRequest []byte
 	pixelFormat              []byte
@@ -592,6 +590,8 @@ type Client struct {
 
 	fullKeyEvent     []byte
 	fullPointerEvent []byte
+
+	previewFrame config.Frame
 
 	Messager io.ReadWriteCloser
 }
@@ -645,8 +645,12 @@ func (c *Client) Read(dst []byte) error {
 		}
 	}()
 
+	if c.timeout.Seconds() == 0 {
+		c.timeout = time.Second * 30
+	}
+
 	select {
-	case <-time.After(30 * time.Second):
+	case <-time.After(c.timeout):
 		_ = c.Close("Read timeout")
 		return io.ErrNoProgress
 	case err := <-errCh:
@@ -662,10 +666,11 @@ func (c *Client) Read(dst []byte) error {
 	}
 }
 
-func NewClient(message io.ReadWriteCloser) *Client {
+func NewClient(message io.ReadWriteCloser, timeout time.Duration) *Client {
 	return &Client{
-		locker: &sync.Mutex{},
-		buffer: make([]byte, 1024),
+		locker:  &sync.Mutex{},
+		buffer:  make([]byte, 1024),
+		timeout: timeout,
 
 		//               +--------------+--------------+--------------+
 		//              | No. of bytes | Type [Value] | Description  |

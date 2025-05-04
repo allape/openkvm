@@ -7,5 +7,5 @@ import (
 )
 
 func VideoCodecFromConfig(conf config.Config) (codec.Codec, error) {
-	return &tight.JPEGEncoder{Quality: conf.Video.Quality}, nil
+	return &tight.JPEGEncoder{Quality: conf.Video.Quality, SliceCount: conf.Video.SliceCount}, nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/allape/openkvm/kvm"
 	"github.com/gorilla/websocket"
+	"time"
 )
 
 type WebsocketsKVMClient struct {
@@ -30,6 +31,6 @@ func (w *WebsocketsKVMClient) Close() error {
 	return w.Conn.Close()
 }
 
-func Websockets2KVMClient(conn *websocket.Conn) *kvm.Client {
-	return kvm.NewClient(&WebsocketsKVMClient{Conn: conn})
+func Websockets2KVMClient(conn *websocket.Conn, timeout time.Duration) *kvm.Client {
+	return kvm.NewClient(&WebsocketsKVMClient{Conn: conn}, timeout)
 }

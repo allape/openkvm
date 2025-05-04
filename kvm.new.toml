@@ -9,6 +9,8 @@ addr = ":8080"
 path = "/websockify"
 # CORS only apply for websocket connection only, not all HTTP requests.
 cors = false
+# Timeout for reading from websocket, in seconds.
+timeout = 30
 
 [vnc]
 # Path to a static served folder, noVNC is recommended.
@@ -77,7 +79,7 @@ src = [
 
 width = 1280
 height = 720
-frame_rate = 30.0
+frame_rate = 24
 quality = 80
 # This is the base number of slices to divide the video into.
 #   4 means 4x4, 16 in total.
@@ -97,9 +99,9 @@ ext = { baud = "921600" }
 #     cursor_x_scale = 28.78
 #   (1280, 720):
 #     cursor_x_scale = 25.6632
-#     cursor_y_scale = 45.5754925372
+#     cursor_y_scale = 45.5755
 cursor_x_scale = 25.6632
-cursor_y_scale = 45.5754925372
+cursor_y_scale = 45.5755
 
 [button]
 # `none`, `serialport`, `shell`

@@ -2,7 +2,6 @@ package video
 
 import (
 	"github.com/allape/openkvm/config"
-	"image"
 )
 
 type (
@@ -14,17 +13,14 @@ type Driver interface {
 	Close() error
 
 	GetFrameRate() float64
-	GetSize() (*image.Point, error)
+	GetSize() (*config.Size, error)
 
-	GetFrame() (config.Frame, Changed, error)
-	GetNextImageRects(count config.SliceCount, full bool) ([]config.Rect, error)
+	NextFrame() (config.Frame, error)
 }
 
 type Options struct {
 	Width         int
 	Height        int
 	FrameRate     float64
-	Quality       int
-	SliceCount    config.SliceCount
 	SetupCommands []config.SetupCommand
 }

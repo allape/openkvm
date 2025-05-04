@@ -2,9 +2,8 @@ package dummy
 
 import (
 	"github.com/allape/openkvm/config"
+	"github.com/allape/openkvm/helper/placeholder"
 	"github.com/allape/openkvm/kvm/video"
-	"github.com/allape/openkvm/kvm/video/placeholder"
-	"image"
 	"image/color"
 	"time"
 )
@@ -12,9 +11,9 @@ import (
 type Driver struct {
 	video.Driver
 
-	src      string
-	lastImg  config.Frame
-	lastTime int64
+	src       string
+	lastFrame config.Frame
+	lastTime  int64
 
 	Width     int
 	Height    int
@@ -33,11 +32,18 @@ func (d *Driver) GetFrameRate() float64 {
 	return d.FrameRate
 }
 
-func (d *Driver) GetSize() (*image.Point, error) {
-	return &image.Point{X: d.Width, Y: d.Height}, nil
+func (d *Driver) GetSize() (*config.Size, error) {
+	return &config.Size{X: d.Width, Y: d.Height}, nil
 }
 
-func (d *Driver) GetFrame() (config.Frame, video.Changed, error) {
+func (d *Driver) NextFrame() (config.Frame, error) {
+	now := time.Now().UnixMilli()
+	if now-d.lastTime <= int64(1000/d.FrameRate) {
+		return d.lastFrame, nil
+	}
+
+	d.lastTime = now
+
 	img, err := placeholder.CreatePlaceholder(
 		d.Width, d.Height,
 		color.RGBA{A: 255},
@@ -45,34 +51,13 @@ func (d *Driver) GetFrame() (config.Frame, video.Changed, error) {
 		d.src,
 		true,
 	)
-
-	return img, true, err
-}
-
-func (d *Driver) GetNextImageRects(sliceCount config.SliceCount, full bool) ([]config.Rect, error) {
-	now := time.Now().UnixMilli()
-	if now-d.lastTime <= int64(1000/d.FrameRate) {
-		return nil, nil
-	}
-
-	d.lastTime = now
-
-	im, _, err := d.GetFrame()
 	if err != nil {
 		return nil, err
 	}
 
-	var lastImage image.Image
+	d.lastFrame = img
 
-	if d.lastImg != nil {
-		lastImage = d.lastImg
-	}
-
-	d.lastImg = im.(image.Image)
-
-	rects, err := video.GetNextImageRects(lastImage, d.lastImg, sliceCount, full)
-
-	return rects, nil
+	return img, nil
 }
 
 type Options struct {
@@ -97,7 +82,7 @@ func NewDriver(src string, options *Options) video.Driver {
 	return &Driver{
 		src:       src,
 		Width:     options.Width,
-		Height:    options.Width,
+		Height:    options.Height,
 		FrameRate: options.FrameRate,
 	}
 }
