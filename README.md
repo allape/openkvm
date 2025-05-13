@@ -143,7 +143,9 @@ _**Price is for reference only, the actual price may vary.**_
               cd openkvm # change to the directory where the project located
               cd ./km/esp32s3-arduino/main/
               arduino-cli compile -b esp32:esp32:esp32s3 .
+              # sudo chmod 777 /dev/ttyACM0
               arduino-cli upload . --fqbn esp32:esp32:esp32s3 -p /dev/ttyACM0 # change to your port
+              # screen /dev/ttyACM0 921600 # ctrl + a + k to exit
               ``` 
 5. Run or build repo
    ```shell
@@ -169,6 +171,21 @@ _**Price is for reference only, the actual price may vary.**_
    ```
 6. Open browser and go to http://ip:8080/vnc.html, then click `Connect`
     - Hostname and port may vary depending on your settings
+    - Clipboard Usage
+      - For now, only host to client is supported
+      - Example on Debian
+         - USB CDC / USB Serial
+           ```shell
+           sudo cat /dev/ttyACM*
+           ```
+         - USB MSC / USB Pen
+           ```shell
+           mkdir openkvm
+           # Commands below need to be run every time you used clipboard
+           sudo umount /dev/sda # Change to your device, use `lsblk` to find out
+           sudo mount /dev/sda ./openkvm
+           cat ./openkvm/data.txt
+           ```
 7. Open http://ip:8080/ui/button.html to control the relay
 
 # Credits

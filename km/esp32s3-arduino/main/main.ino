@@ -1,12 +1,17 @@
+// Credits
+// https://github.com/espressif/arduino-esp32/tree/master/libraries/USB/examples
+// https://github.com/hathach/tinyusb
+
 #include "Arduino.h"
 
 #include "USB.h"
 #include "USBHIDMouse.h"
 #include "USBHIDKeyboard.h"
+#include "USBMSC.h"
 
 #include "keys.h"
 
-#define BufferLength 256
+#define BufferLength 1024
 
 #define MagicWord "open-kvm"
 #define MagicWordLength 8
@@ -14,10 +19,12 @@
 #define KeyEvent 4      // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.4
 #define PointerEvent 5  // https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.5
 
+// Button / Switch Event
+//
 // CMD  TYPE PIN  VALUE
 // 0xff 0x01 0x0b 0x01
 //
-// CMD: fixed value 0xff
+// CMD: fixed value "0xff"
 // PIN: pin number
 // TYPE:
 //   0x01 for initialing
@@ -28,33 +35,56 @@
 //     VALUE: 0x01 for HIGH
 #define ButtonEvent 0xff  // power button, rest button, etc
 
+// Clipboard Event
+//
+// Bewared, the "Clipboard" here is not the clipboard of an OS,
+//     all content of "clipboard" will be writen into a file which is wrapped by an USB MSC
+//
+// CMD     LENGTH    DATA
+// 0xfe    0x0001    0x00 0x01 0x02 ...
+//
+// CMD: fixed value "0xfe"
+// LENGTH: length of the data, max value is {@link BufferLength} - 3
+// DATA: the data array
+#define ClipboardEvent 0xfe
+
 // tips: `ctrl+a` to enter command mode if screen, `k` to kill
 // screen /dev/cu.wchusbserialxxx 921600 \n
 // open-kvm\n
 
 // test the builtin LED
-// "a1" lights up, "a0" lights off
+// a1: lights up
+// a0: lights off
+// aN: N is on or off
 #define LEDTestEvent 'a'
+
 // test keyboard
-// "b049" for 1
-// "b032" for Space
-// "b027" for Esc
-// "b013" for Enter
-// "bNNN", NNN is the key code, 000~255
+// b049: 1
+// b032: Space
+// b027: Esc
+// b013: Enter
+// bNNN: NNN is the key code, 000~255
 #define KeyboardTestEvent 'b'
+
 // test mouse
-// "c1000001-00002" for click left button at (0001, 0002)
-// "c2000000000000" for right
-// "c4000000000000" for middle
-// "c0010000-10000" for moving cursor to (100, 100)
-// "cNXXXXXXYYYYYY", N is button, XXXXXX is x axis(int16), YYYYYY is y axis(int16)
+// c1000001-00002: click left button at (0001, 0002)
+// c2000000000000: right
+// c4000000000000: middle
+// c0010000-10000: moving cursor to (100, 100)
+// cNXXXXXXYYYYYY: N is button, XXXXXX is x axis(int16), YYYYYY is y axis(int16)
 #define MouseTestEvent 'c'
 
 // test button
-// "d1121" for set pin 12 to output
-// "d2121" for set pin 12 to HIGH
-// "d2120" for set pin 12 to LOW
+// d1121: set pin 12 to output
+// d2121: set pin 12 to HIGH
+// d2120: set pin 12 to LOW
+// dTNNX: T is type, NN is pin number, X is output/input or high/low
 #define ButtonTestEvent 'd'
+
+// test clipboard
+// e1234: put text "1234" into clipboard
+// eNNNN: NNNN is the text, max 4 bytes
+#define ClipboardTestEvent 'e'
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button#value
 //     0: Main button pressed, usually the left button or the un-initialized state
@@ -70,6 +100,146 @@
 #define _MOUSE_WHEEL_DOWN 1 << 4
 #define _MOUSE_WHEEL_LEFT 1 << 5
 #define _MOUSE_WHEEL_RIGHT 1 << 6
+
+#if !ARDUINO_USB_CDC_ON_BOOT
+USBCDC USBSerial;
+#endif
+USBHIDKeyboard Keyboard;
+USBHIDAbsoluteMouse Mouse;
+USBMSC MSC;
+
+// region MSC
+
+#define FAT_U8(v)          ((v) & 0xFF)
+#define FAT_U16(v)         FAT_U8(v), FAT_U8((v) >> 8)
+#define FAT_U32(v)         FAT_U8(v), FAT_U8((v) >> 8), FAT_U8((v) >> 16), FAT_U8((v) >> 24)
+#define FAT_MS2B(s, ms)    FAT_U8(((((s) & 0x1) * 1000) + (ms)) / 10)
+#define FAT_HMS2B(h, m, s) FAT_U8(((s) >> 1) | (((m) & 0x7) << 5)), FAT_U8((((m) >> 3) & 0x7) | ((h) << 3))
+#define FAT_YMD2B(y, m, d) FAT_U8(((d) & 0x1F) | (((m) & 0x7) << 5)), FAT_U8((((m) >> 3) & 0x1) | ((((y) - 1980) & 0x7F) << 1))
+#define FAT_TBL2B(l, h)    FAT_U8(l), FAT_U8(((l >> 8) & 0xF) | ((h << 4) & 0xF0)), FAT_U8(h >> 4)
+
+static const uint32_t DISK_SECTOR_COUNT = 2 * 8;   // 8KB is the smallest size that windows allow to mount
+static const uint16_t DISK_SECTOR_SIZE = 512;      // Should be 512
+static const uint16_t DISC_SECTORS_PER_TABLE = 1;  // Each table sector can fit 170KB (340 sectors)
+
+static uint8_t msc_disk[DISK_SECTOR_COUNT][DISK_SECTOR_SIZE] = {
+  //------------- Block0: Boot Sector -------------//
+  {                                                        // Header (62 bytes)
+   0xEB, 0x3C, 0x90,                                       // jump_instruction
+   'M', 'S', 'D', 'O', 'S', '5', '.', '0',                 // oem_name
+   FAT_U16(DISK_SECTOR_SIZE),                              // bytes_per_sector
+   FAT_U8(1),                                              // sectors_per_cluster
+   FAT_U16(1),                                             // reserved_sectors_count
+   FAT_U8(1),                                              // file_alloc_tables_num
+   FAT_U16(16),                                            // max_root_dir_entries
+   FAT_U16(DISK_SECTOR_COUNT),                             // fat12_sector_num
+   0xF8,                                                   // media_descriptor
+   FAT_U16(DISC_SECTORS_PER_TABLE),                        // sectors_per_alloc_table; // FAT12 and FAT16
+   FAT_U16(1),                                             // sectors_per_track; // A value of 0 may indicate LBA-only access
+   FAT_U16(1),                                             // num_heads
+   FAT_U32(0),                                             // hidden_sectors_count
+   FAT_U32(0),                                             // total_sectors_32
+   0x00,                                                   // physical_drive_number;0x00 for (first) removable media, 0x80 for (first) fixed disk
+   0x00,                                                   // reserved
+   0x29,                                                   // extended_boot_signature; // should be 0x29
+   FAT_U32(0x1234),                                        // serial_number: 0x1234 => 1234
+   'T', 'i', 'n', 'y', 'U', 'S', 'B', ' ', 'M', 'S', 'C',  // volume_label padded with spaces (0x20)
+   'F', 'A', 'T', '1', '2', ' ', ' ', ' ',                 // file_system_type padded with spaces (0x20)
+
+   // Zero up to 2 last bytes of FAT magic code (448 bytes)
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+   // boot signature (2 bytes)
+   0x55, 0xAA
+  },
+
+  //------------- Block1: FAT12 Table -------------//
+  {
+    FAT_TBL2B(0xFF8, 0xFFF), FAT_TBL2B(0xFFF, 0x000)  // first 2 entries must be 0xFF8 0xFFF, third entry is cluster end of readme file
+  },
+};
+
+static int32_t writeDataText(uint8_t *buffer, uint32_t bufsize) {
+  uint8_t dataSector[DISK_SECTOR_SIZE] = {
+    // first entry is volume label
+    'o', 'p', 'e', 'n', 'k', 'v', 'm', ' ', ' ', ' ', ' ',
+    0x08,                                                                                                                 // FILE_ATTR_VOLUME_LABEL
+    0x00, FAT_MS2B(0, 0), FAT_HMS2B(0, 0, 0), FAT_YMD2B(0, 0, 0), FAT_YMD2B(0, 0, 0), FAT_U16(0), FAT_HMS2B(12, 0, 0),    // last_modified_hms
+    FAT_YMD2B(2025, 5, 1),                                                                                                // last_modified_ymd
+    FAT_U16(0), FAT_U32(0),
+
+    // second entry is data.txt
+    'd', 'a', 't', 'a', ' ', ' ', ' ', ' ',  // file_name[8]; padded with spaces (0x20)
+    't', 'x', 't',                           // file_extension[3]; padded with spaces (0x20)
+    0x20,                                    // file attributes: FILE_ATTR_ARCHIVE
+    0x00,                                    // ignore
+    FAT_MS2B(1, 980),                        // creation_time_10_ms (max 199x10 = 1s 990ms)
+    FAT_HMS2B(12, 0, 0),                     // create_time_hms [5:6:5] => h:m:(s/2)
+    FAT_YMD2B(2025, 5, 1),                   // create_time_ymd [7:4:5] => (y+1980):m:d
+    FAT_YMD2B(2025, 5, 1),                   // last_access_ymd
+    FAT_U16(0),                              // extended_attributes
+    FAT_HMS2B(12, 0, 0),                     // last_modified_hms
+    FAT_YMD2B(2025, 5, 1),                   // last_modified_ymd
+    FAT_U16(2),                              // start of file in cluster
+    FAT_U32(bufsize)                         // file size
+  };
+  memcpy(msc_disk[2], dataSector, DISK_SECTOR_SIZE);
+  memcpy(msc_disk[3], buffer, bufsize);
+  return bufsize;
+}
+
+static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
+  // FIXME: prevent to write file besides data.txt, especially ".DS_Store"
+  Serial.printf("MSC WRITE: lba: %lu, offset: %lu, bufsize: %lu\n", lba, offset, bufsize);
+  memcpy(msc_disk[lba] + offset, buffer, bufsize);
+  return bufsize;
+}
+
+static int32_t onRead(uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize) {
+  Serial.printf("MSC READ: lba: %lu, offset: %lu, bufsize: %lu\n", lba, offset, bufsize);
+  memcpy(buffer, msc_disk[lba] + offset, bufsize);
+  return bufsize;
+}
+
+static bool onStartStop(uint8_t power_condition, bool start, bool load_eject) {
+  Serial.printf("MSC START/STOP: power: %u, start: %u, eject: %u\n", power_condition, start, load_eject);
+  return true;
+}
+
+static void usbEventCallback(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+  if (event_base == ARDUINO_USB_EVENTS) {
+    arduino_usb_event_data_t *data = (arduino_usb_event_data_t *)event_data;
+    switch (event_id) {
+      case ARDUINO_USB_STARTED_EVENT: Serial.println("USB PLUGGED"); break;
+      case ARDUINO_USB_STOPPED_EVENT: Serial.println("USB UNPLUGGED"); break;
+      case ARDUINO_USB_SUSPEND_EVENT: Serial.printf("USB SUSPENDED: remote_wakeup_en: %u\n", data->suspend.remote_wakeup_en); break;
+      case ARDUINO_USB_RESUME_EVENT:  Serial.println("USB RESUMED"); break;
+      default: break;
+    }
+  }
+}
+
+// endregion
 
 class SerialReader {
 private:
@@ -231,6 +401,11 @@ public:
           this->_target_len = 4;
           Serial.println("[debug] wait for button event");
           break;
+        case ClipboardEvent:
+          this->_target_len = 3;
+          Serial.println("[debug] wait for button event");
+          break;
+
         case LEDTestEvent:
           this->_target_len = 2;
           Serial.println("[debug] wait for led event");
@@ -246,6 +421,10 @@ public:
         case ButtonTestEvent:
           this->_target_len = 5;
           Serial.println("[debug] wait for button test event");
+          break;
+        case ClipboardTestEvent:
+          this->_target_len = 5;
+          Serial.println("[debug] wait for clipboard test event");
           break;
         default:
           this->_target_len = 0;
@@ -284,6 +463,26 @@ public:
           }
           break;
         }
+      case ClipboardEvent:
+        {
+          if (this->_target_len == 3) {
+            this->_target_len += ((this->_buf[1] << 8) | this->_buf[2]);
+            if (this->_target_len == 3) {
+              this->_target_len = 0;
+              this->_index = 0;
+            }
+            return;
+          }
+
+          char *data = this->_buf + 3;
+          int length = this->_target_len - 3;
+
+          writeDataText((uint8_t*) data, length);
+          USBSerial.write(data, length);
+
+          break;
+        }
+
       case LEDTestEvent:
         {
           bool on = this->_buf[1] == '1';
@@ -353,6 +552,16 @@ public:
           }
           break;
         }
+      case ClipboardTestEvent:
+        {
+          char text[4] = {};
+          memcpy(text, this->_buf + 1, 4);
+          Serial.print("[debug] clipboard test: ");
+          Serial.println(text);
+          writeDataText((uint8_t*) text, 4);
+          USBSerial.write(text, 4);
+          break;
+        }
       default:
         Serial.println("[warn] unknown event");
     }
@@ -361,20 +570,6 @@ public:
     this->_index = 0;
   }
 };
-
-//void on_spi(void *)
-//{
-//  while (1)
-//  {
-//    delay(1500);
-//    // Serial.print("_");
-//
-//    // TODO start a SPI to listen data from a GPIO device
-//  }
-//}
-
-USBHIDKeyboard Keyboard;
-USBHIDAbsoluteMouse Mouse;
 
 SerialReader *serialport = new SerialReader(Keyboard, Mouse);
 
@@ -386,26 +581,32 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
+  writeDataText((uint8_t *)"", 4);
+
+  USB.onEvent(usbEventCallback);
+
+  MSC.vendorID("allape");
+  MSC.productID("openkvm");
+  MSC.productRevision("1.0");
+  MSC.onStartStop(onStartStop);
+  MSC.onRead(onRead);
+  MSC.onWrite(onWrite);
+  MSC.mediaPresent(true);
+  MSC.isWritable(false);
+  MSC.begin(DISK_SECTOR_COUNT, DISK_SECTOR_SIZE);
+
+  USBSerial.begin();
+
   Mouse.begin();
   Keyboard.begin();
+
   USB.begin();
 
   Serial.println("[100%] ready");
-
-  //  // start a new thread
-  //  xTaskCreatePinnedToCore(
-  //      on_spi,   // the task
-  //      "on_spi", // the name of the task
-  //      10000,    // stack size
-  //      NULL,     // parameters
-  //      1,        // priority
-  //      NULL,     // task handle
-  //      0         // core
-  //  );
 }
 
 void loop() {
-  while (Serial.available() > 0) {
+  while (Serial.available()) {
     serialport->push(Serial.read());
   }
   delay(1);
