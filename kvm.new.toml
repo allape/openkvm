@@ -118,3 +118,9 @@ ext_btn = "2"
 #type = "serialport" # see `km/esp32s3-arduino/main/main.ino` for more detail
 #src = "/dev/ttyACM0"
 #ext = { baud = "921600" }
+
+[clipboard]
+# `none`, `serialport`
+type = "serialport"
+src = "/dev/ttyACM0"
+ext = { baud = "921600" }

@@ -102,12 +102,22 @@ func main() {
 		}
 	}()
 
+	clipboard, err := factory.ClipboardFromConfig(conf, k, m)
+	if err != nil {
+		l.Error().Fatalln("clipboard from config:", err)
+	}
+	defer func() {
+		if clipboard != nil {
+			_ = clipboard.Close()
+		}
+	}()
+
 	videoCodec, err := factory.VideoCodecFromConfig(conf)
 	if err != nil {
 		l.Error().Fatalln("video codec from config:", err)
 	}
 
-	server, err := kvm.New(k, v, m, videoCodec, kvm.Options{
+	server, err := kvm.New(k, v, m, videoCodec, clipboard, kvm.Options{
 		Config: conf,
 	})
 	if err != nil {

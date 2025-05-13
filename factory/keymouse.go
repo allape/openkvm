@@ -61,3 +61,24 @@ func MouseFromConfigOrUseKeyboard(kd keymouse.Driver, conf config.Config) (md ke
 
 	return md, err
 }
+
+func KeymouseSerialDriverFromConfig(conf config.Config, keyboard keymouse.Driver, mouse keymouse.Driver, name, src string, ext config.SerialPortExt) (keymouse.Driver, error) {
+	if conf.Keyboard.Type == config.KeyboardSerialPort && src == conf.Keyboard.Src {
+		l.Info().Printf("%s driver is the same as keyboard driver", name)
+		return keyboard, nil
+	}
+
+	if conf.Mouse.Type == config.MouseSerialPort && src == conf.Mouse.Src {
+		l.Info().Printf("%s driver is the same as mouse driver", name)
+		return mouse, nil
+	}
+
+	l.Info().Printf("%s driver is serial port: %s", name, src)
+
+	baud, err := ext.GetBaud(DefaultBaud)
+	if err != nil {
+		return nil, err
+	}
+
+	return serialport.New(src, baud), err
+}

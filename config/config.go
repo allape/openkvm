@@ -40,6 +40,13 @@ const (
 	ButtonShell      ButtonDriverType = "shell"
 )
 
+type ClipboardDriverType string
+
+const (
+	ClipboardNone       ClipboardDriverType = "none"
+	ClipboardSerialPort ClipboardDriverType = "serialport"
+)
+
 type Websocket struct {
 	Addr    string `toml:"addr"`
 	Path    string `toml:"path"`
@@ -88,6 +95,12 @@ type Button struct {
 	ExtraButton string           `toml:"ext_btn"`
 }
 
+type Clipboard struct {
+	Type ClipboardDriverType `toml:"type"`
+	Src  string              `toml:"src"`
+	Ext  SerialPortExt       `toml:"ext"`
+}
+
 type VNC struct {
 	Path     string `toml:"path"`
 	Username string `toml:"username"`
@@ -100,6 +113,7 @@ type Config struct {
 	Keyboard  Keyboard  `toml:"keyboard"`
 	Mouse     Mouse     `toml:"mouse"`
 	Button    Button    `toml:"button"`
+	Clipboard Clipboard `toml:"clipboard"`
 	VNC       VNC       `toml:"vnc"`
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/allape/gogger"
 	"github.com/allape/openkvm/config"
 	"github.com/allape/openkvm/crypto/des"
+	"github.com/allape/openkvm/kvm/clipboard"
 	"github.com/allape/openkvm/kvm/codec"
 	"github.com/allape/openkvm/kvm/keymouse"
 	"github.com/allape/openkvm/kvm/video"
@@ -91,6 +92,7 @@ type Server struct {
 	Video      video.Driver
 	Mouse      keymouse.Driver
 	VideoCodec codec.Codec
+	Clipboard  clipboard.Driver
 
 	Options Options
 
@@ -407,9 +409,15 @@ func (s *Server) handleClientCut(client *Client) error {
 		return err
 	}
 
-	l.Info().Println("ClientCutText:", string(text))
+	l.Debug().Println("ClientCutText:", string(text))
 
-	// TODO handle clipboard
+	n, err := s.Clipboard.Write(text)
+	if err != nil {
+		return err
+	} else if n != int(length) {
+		//return io.ErrShortWrite
+		l.Warn().Printf("ClientCutText: short write, expected %d, got %d\n", length, n)
+	}
 
 	return nil
 }
@@ -556,6 +564,7 @@ func New(
 	v video.Driver,
 	m keymouse.Driver,
 	videoCodec codec.Codec,
+	c clipboard.Driver,
 	options Options,
 ) (*Server, error) {
 	s := &Server{
@@ -565,6 +574,7 @@ func New(
 		Video:      v,
 		Mouse:      m,
 		VideoCodec: videoCodec,
+		Clipboard:  c,
 
 		locker: &sync.Mutex{},
 	}

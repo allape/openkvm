@@ -11,7 +11,7 @@
 
 #include "keys.h"
 
-#define BufferLength 1024
+#define BufferLength 128 * 1024
 
 #define MagicWord "open-kvm"
 #define MagicWordLength 8
@@ -37,8 +37,11 @@
 
 // Clipboard Event
 //
-// Bewared, the "Clipboard" here is not the clipboard of an OS,
-//     all content of "clipboard" will be writen into a file which is wrapped by an USB MSC
+// Does not use the standard ClientCutEvent(https://datatracker.ietf.org/doc/html/rfc6143#section-7.5.6) of VNC,
+//     due to the ESP32 does not have a large RAM
+//
+// Bewared, the "Clipboard" here is not the clipboard of any OS,
+//     all content of "clipboard" will be writen into a file which is wrapped by an USBMSC, or be written into USBCDC
 //
 // CMD     LENGTH    DATA
 // 0xfe    0x0001    0x00 0x01 0x02 ...
@@ -403,7 +406,7 @@ public:
           break;
         case ClipboardEvent:
           this->_target_len = 3;
-          Serial.println("[debug] wait for button event");
+          Serial.println("[debug] wait for clipboard event");
           break;
 
         case LEDTestEvent:
@@ -466,7 +469,7 @@ public:
       case ClipboardEvent:
         {
           if (this->_target_len == 3) {
-            this->_target_len += ((this->_buf[1] << 8) | this->_buf[2]);
+            this->_target_len += ((int(this->_buf[1]) << 8) | this->_buf[2]);
             if (this->_target_len == 3) {
               this->_target_len = 0;
               this->_index = 0;
@@ -479,6 +482,10 @@ public:
 
           writeDataText((uint8_t*) data, length);
           USBSerial.write(data, length);
+
+          Serial.print("[debug] clipboard event write ");
+          Serial.print(length);
+          Serial.println(" bytes");
 
           break;
         }

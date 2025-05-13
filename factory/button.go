@@ -7,7 +7,6 @@ import (
 	"github.com/allape/openkvm/kvm/button/serialport"
 	"github.com/allape/openkvm/kvm/button/shell"
 	"github.com/allape/openkvm/kvm/keymouse"
-	keymouseSP "github.com/allape/openkvm/kvm/keymouse/serialport"
 )
 
 func ButtonFromConfig(conf config.Config, keyboard keymouse.Driver, mouse keymouse.Driver) (bd button.Driver, err error) {
@@ -16,23 +15,12 @@ func ButtonFromConfig(conf config.Config, keyboard keymouse.Driver, mouse keymou
 		l.Warn().Println("button driver is none, no button output")
 		return nil, err
 	case config.ButtonSerialPort:
-		var km keymouse.Driver
-
-		switch conf.Button.Src {
-		case conf.Keyboard.Src:
-			l.Info().Println("button driver is the same as keyboard driver")
-			km = keyboard
-		case conf.Mouse.Src:
-			l.Info().Println("button driver is the same as mouse driver")
-			km = mouse
-		default:
-			l.Info().Println("button driver is serial port:", conf.Button.Src)
-			ext := config.SerialPortExt(conf.Button.Ext)
-			baud, err := ext.GetBaud(DefaultBaud)
-			if err != nil {
-				return nil, err
-			}
-			km = keymouseSP.New(conf.Button.Src, baud)
+		km, err := KeymouseSerialDriverFromConfig(
+			conf, keyboard, mouse,
+			"button", conf.Button.Src, config.SerialPortExt(conf.Button.Ext),
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		bd = &serialport.Button{

@@ -131,20 +131,20 @@ _**Price is for reference only, the actual price may vary.**_
             - Here is an example on `Debian` with an `ESP32-S3` connected to `/dev/ttyACM0`
               ```shell
               cd ~
-              # command below will install `arduino-cli` at ~/bin
+              # Command below will install `arduino-cli` at ~/bin
               curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
               echo "export PATH=\$PATH:$HOME/bin" >> ./.bashrc
               source ./.bashrc
               arduino-cli config init
               arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_dev_index.json
-              arduino-cli config set network.proxy "http://localhost:1080" # optional, because arduino-cli may NOT respect http_proxy or https_proxy environment variables
+              arduino-cli config set network.proxy "http://localhost:1080" # Optional, because arduino-cli may NOT respect http_proxy or https_proxy environment variables
               arduino-cli core update-index
-              arduino-cli core install esp32:esp32 # this will takes a while...
-              cd openkvm # change to the directory where the project located
+              arduino-cli core install esp32:esp32 # This will takes a while...
+              cd openkvm # Change to the directory where the project located
               cd ./km/esp32s3-arduino/main/
               arduino-cli compile -b esp32:esp32:esp32s3 .
               # sudo chmod 777 /dev/ttyACM0
-              arduino-cli upload . --fqbn esp32:esp32:esp32s3 -p /dev/ttyACM0 # change to your port
+              arduino-cli upload . --fqbn esp32:esp32:esp32s3 -p /dev/ttyACM0
               # screen /dev/ttyACM0 921600 # ctrl + a + k to exit
               ``` 
 5. Run or build repo
@@ -174,15 +174,17 @@ _**Price is for reference only, the actual price may vary.**_
     - Clipboard Usage
       - For now, only host to client is supported
       - Example on Debian
-         - USB CDC / USB Serial
+         - USB CDC / USB Serial with device `/dev/ttyACM0`
            ```shell
-           sudo cat /dev/ttyACM*
+           sudo screen /dev/ttyACM0
+           # Or
+           sudo cat /dev/ttyACM0 # FIXME: In some cases, this command only works after you run `screen`
            ```
-         - USB MSC / USB Pen
+         - USB MSC / USB Pen with device `/dev/sda`, use `lsblk` to find out
            ```shell
            mkdir openkvm
            # Commands below need to be run every time you used clipboard
-           sudo umount /dev/sda # Change to your device, use `lsblk` to find out
+           sudo umount /dev/sda
            sudo mount /dev/sda ./openkvm
            cat ./openkvm/data.txt
            ```
